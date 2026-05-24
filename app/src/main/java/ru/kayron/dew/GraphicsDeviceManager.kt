@@ -35,7 +35,7 @@ class GraphicsDeviceManager(private val game: Game) : IGraphicsDeviceManager, IG
 
         graphicsDevice.setViewport(0, 0, preferredBackBufferWidth, preferredBackBufferHeight)
 
-        game.services.addService(IGraphicsDeviceService::class.java, this)
+        game.cargo.addSingleton<IGraphicsDeviceService>(this)
 
         initialized = true
     }

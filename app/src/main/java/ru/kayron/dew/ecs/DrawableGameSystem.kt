@@ -1,4 +1,7 @@
-package ru.kayron.dew
+package ru.kayron.dew.ecs
+
+import ru.kayron.dew.Game
+import ru.kayron.dew.GameTime
 
 open class DrawableGameSystem(game: Game) : GameSystem(game), IDrawable {
     override val drawOrder: Int = 0

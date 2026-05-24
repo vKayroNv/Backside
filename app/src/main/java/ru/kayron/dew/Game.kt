@@ -6,15 +6,14 @@ import android.view.View
 import ru.kayron.dew.graphics.GraphicsDevice
 import ru.kayron.dew.input.*
 import ru.kayron.dew.content.ContentManager
+import ru.kayron.cargo.Cargo
+import ru.kayron.cargo.CargoContainer
 
 open class Game : View.OnKeyListener, View.OnTouchListener {
     val graphicsDevice = GraphicsDevice()
-    val services = GameServiceContainer()
     val gameWindow: GameWindow = GameWindow()
-    protected val gameSystems = mutableListOf<GameSystem>()
-    private val updateSystems = mutableListOf<GameSystem>()
-    private val drawSystems = mutableListOf<IDrawable>()
-
+    val cargo: CargoContainer = Cargo.root
+    
     val graphicsDeviceManager: GraphicsDeviceManager = GraphicsDeviceManager(this)
 
     var isActive: Boolean = true
@@ -30,14 +29,11 @@ open class Game : View.OnKeyListener, View.OnTouchListener {
 
     val content: ContentManager = ContentManager(this)
 
-    fun initialize() {
+    open fun initialize() {
         if (isInitialized) return
         graphicsDeviceManager.createDevice()
         graphicsDevice.initialize()
-        sortSystems()
-        for (system in updateSystems) {
-            system.initialize()
-        }
+        
         loadContent()
         isInitialized = true
     }
@@ -46,21 +42,11 @@ open class Game : View.OnKeyListener, View.OnTouchListener {
     open fun unloadContent() {}
 
     open fun update(gameTime: GameTime) {
-        if (updateSystems.size != gameSystems.size) sortSystems()
-        for (system in updateSystems) {
-            if (system.enabled) {
-                system.update(gameTime)
-            }
-        }
+        
     }
 
     open fun draw(gameTime: GameTime) {
-        if (updateSystems.size != gameSystems.size) sortSystems()
-        for (system in drawSystems) {
-            if (system.visible) {
-                system.draw(gameTime)
-            }
-        }
+        
     }
 
     fun run() {
@@ -100,38 +86,6 @@ open class Game : View.OnKeyListener, View.OnTouchListener {
 
     fun resetElapsedTime() {
         lastFrameTimeNanos = System.nanoTime()
-    }
-
-    fun systems(): List<GameSystem> = gameSystems.toList()
-
-    fun addSystem(system: GameSystem) {
-        gameSystems.add(system)
-        updateSystems.add(system)
-        if (system is IDrawable) {
-            drawSystems.add(system)
-        }
-        sortSystems()
-        if (isInitialized) {
-            system.initialize()
-        }
-    }
-
-    fun removeSystem(system: GameSystem): Boolean {
-        val removed = gameSystems.remove(system)
-        updateSystems.remove(system)
-        if (system is IDrawable) {
-            drawSystems.remove(system)
-        }
-        return removed
-    }
-
-    protected fun sortSystems() {
-        updateSystems.clear()
-        updateSystems.addAll(gameSystems)
-        drawSystems.clear()
-        drawSystems.addAll(gameSystems.filterIsInstance<IDrawable>())
-        updateSystems.sortBy { it.updateOrder }
-        drawSystems.sortBy { it.drawOrder }
     }
 
     override fun onKey(v: View, keyCode: Int, event: KeyEvent): Boolean {

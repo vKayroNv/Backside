@@ -1,4 +1,7 @@
-package ru.kayron.dew
+package ru.kayron.dew.ecs
+
+import ru.kayron.dew.Game
+import ru.kayron.dew.GameTime
 
 open class GameSystem(protected val game: Game) : IGameSystem, IUpdateable {
     override var enabled: Boolean = true

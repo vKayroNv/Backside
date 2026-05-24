@@ -1,4 +1,6 @@
-package ru.kayron.dew
+package ru.kayron.dew.ecs
+
+import ru.kayron.dew.GameTime
 
 interface IDrawable {
     val drawOrder: Int

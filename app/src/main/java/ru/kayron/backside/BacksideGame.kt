@@ -23,6 +23,11 @@ open class BacksideGame : Game() {
     override fun loadContent() {
         batch = SpriteBatch(graphicsDevice)
     }
+    
+    override fun initialize() {
+        
+        super.initialize()
+    }
 
     override fun update(gameTime: GameTime) {
         if (Keyboard.getState().isKeyDown(Keys.Escape)) {
