@@ -108,3 +108,57 @@ class ArrayUtils {
         }
     }
 }
+
+internal fun IntArray.swap(a: Int, b: Int) {
+    val t = this[a]
+    this[a] = this[b]
+    this[b] = t
+}
+
+internal fun BooleanArray.swap(a: Int, b: Int) {
+    val t = this[a]
+    this[a] = this[b]
+    this[b] = t
+}
+
+internal fun ByteArray.swap(a: Int, b: Int) {
+    val t = this[a]
+    this[a] = this[b]
+    this[b] = t
+}
+
+internal fun CharArray.swap(a: Int, b: Int) {
+    val t = this[a]
+    this[a] = this[b]
+    this[b] = t
+}
+
+internal fun ShortArray.swap(a: Int, b: Int) {
+    val t = this[a]
+    this[a] = this[b]
+    this[b] = t
+}
+
+internal fun LongArray.swap(a: Int, b: Int) {
+    val t = this[a]
+    this[a] = this[b]
+    this[b] = t
+}
+
+internal fun FloatArray.swap(a: Int, b: Int) {
+    val t = this[a]
+    this[a] = this[b]
+    this[b] = t
+}
+
+internal fun DoubleArray.swap(a: Int, b: Int) {
+    val t = this[a]
+    this[a] = this[b]
+    this[b] = t
+}
+
+internal fun <T> Array<T>.swap(a: Int, b: Int) {
+    val t = this[a]
+    this[a] = this[b]
+    this[b] = t
+}

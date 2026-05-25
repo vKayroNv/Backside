@@ -2,7 +2,7 @@ package ru.kayron.dew.ecs
 
 import ru.kayron.dew.utils.ArrayUtils
 
-abstract class Component() {
+abstract class Component {
     protected var entityIds = IntArray(INITIAL_CAPACITY)
     protected var entityToIndex = IntArray(INITIAL_CAPACITY) { -1 }
 
