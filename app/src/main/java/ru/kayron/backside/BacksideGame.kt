@@ -25,7 +25,6 @@ open class BacksideGame : Game() {
     }
     
     override fun initialize() {
-        
         super.initialize()
     }
 

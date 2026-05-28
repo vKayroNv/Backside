@@ -3,43 +3,52 @@ package ru.kayron.dew.components
 import ru.kayron.dew.ecs.Component
 import ru.kayron.dew.ecs.Entity
 import ru.kayron.dew.utils.swap
-import ru.kayron.dew.math.Vector2
+import ru.kayron.dew.math.Point
 
 class SpriteComponent : Component() {
-    private var vx = FloatArray(INITIAL_CAPACITY)
-    private var vy = FloatArray(INITIAL_CAPACITY)
+    private var filename = arrayOfNulls<String>(INITIAL_CAPACITY)
+    private var width = IntArray(INITIAL_CAPACITY)
+    private var height = IntArray(INITIAL_CAPACITY)
+    private var rows = IntArray(INITIAL_CAPACITY)
+    private var columns = IntArray(INITIAL_CAPACITY)
     
     fun add(
-        entity: Entity, 
-        vxVal: Float = 0f, 
-        vyVal: Float = 0f
+        entity: Entity,
+        filenameVal: String,
+        widthVal: Int,
+        heightVal: Int,
+        rowsVal: Int = 1,
+        columnsVal: Int = 1
     ) {
         val index = addEntity(entity)
-        vx[index] = vxVal
-        vy[index] = vyVal
-    }
-    
-    fun update(
-        entity: Entity, 
-        vxVal: Float? = null, 
-        vyVal: Float? = null
-    ) {
-        val index = indexOf(entity)
-        vxVal?.let { vx[index] = it }
-        vyVal?.let { vy[index] = it }
+        filename[index] = filenameVal
+        width[index] = widthVal
+        height[index] = heightVal
+        rows[index] = rowsVal
+        columns[index] = columnsVal
     }
     
     override fun grow(newSize: Int) {
-        vx = vx.copyOf(newSize)
-        vy = vy.copyOf(newSize)
+        filename = filename.copyOf(newSize)
+        width = width.copyOf(newSize)
+        height = height.copyOf(newSize)
+        rows = rows.copyOf(newSize)
+        columns = columns.copyOf(newSize)
     }
     
     override fun swap(a: Int, b: Int) {
-        vx.swap(a, b)
-        vy.swap(a, b)
+        filename.swap(a, b)
+        width.swap(a, b)
+        height.swap(a, b)
+        rows.swap(a, b)
+        columns.swap(a, b)
     }
     
-    fun vx(entity: Entity) : Float = vx[indexOf(entity)]
-    fun vy(entity: Entity) : Float = vy[indexOf(entity)]
-    fun vel(entity: Entity) : Vector2 = Vector2(vx(entity), vy(entity))
+    fun filename(entity: Entity) : String = filename[indexOf(entity)] as String
+    fun width(entity: Entity) : Int = width[indexOf(entity)]
+    fun height(entity: Entity) : Int = height[indexOf(entity)]
+    fun size(entity: Entity) : Point = Point(width(entity), height(entity))
+    fun rows(entity: Entity) : Int = rows[indexOf(entity)]
+    fun columns(entity: Entity) : Int = columns[indexOf(entity)]
+    fun grid(entity: Entity) : Point = Point(rows(entity), columns(entity))
 }

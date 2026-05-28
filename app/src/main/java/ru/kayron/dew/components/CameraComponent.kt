@@ -59,7 +59,7 @@ class CameraComponent : Component() {
     fun viewportWidth(entity: Entity) : Float = viewportWidth[indexOf(entity)]
     fun viewportHeight(entity: Entity) : Float = viewportHeight[indexOf(entity)]
     fun viewport(entity: Entity) : Vector2 = Vector2(viewportWidth(entity), viewportHeight(entity))
-    fun isActive(entity: Entity) : Boolean = active[indexOf(entity)]
+    fun getActive() : Boolean = ?
     
     fun setActive(entity: Entity) {
         val index = indexOf(entity)
