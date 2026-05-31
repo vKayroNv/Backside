@@ -31,16 +31,16 @@ class RenderSystem(
     override fun initialize() {
         batch = SpriteBatch(game.graphicsDevice)
         
-        var filenames = world.componentManager.get<SpriteComponent>().filenames()
+        val filenames = world.componentManager.get<SpriteComponent>().filenames()
         filenames.forEach {
-            val texture = game.content.load<Texture2D>(it)
-            textures.getOrPut(it) { texture }
+            texture(it)
         }
     }
 
     override fun update(gameTime: GameTime) {
         val cameraComponent = world.componentManager.get<CameraComponent>()
         val transformComponent = world.componentManager.get<TransformComponent>()
+        val animatedSpriteComponent = world.componentManager.get<AnimatedSpriteComponent>()
 
         val camera = cameraComponent.getActive()
         if (camera == -1) {
@@ -53,8 +53,10 @@ class RenderSystem(
         val rotation = transformComponent.rotation(camera)
         val zoom = cameraComponent.zoom(camera)
 
-        val viewportWidth = cameraComponent.viewportWidth(camera)
-        val viewportHeight = cameraComponent.viewportHeight(camera)
+        val viewportWidth = cameraComponent.viewportWidth(camera).takeIf { it > 0f }
+            ?: game.graphicsDevice.viewport.width.toFloat()
+        val viewportHeight = cameraComponent.viewportHeight(camera).takeIf { it > 0f }
+            ?: game.graphicsDevice.viewport.height.toFloat()
 
         transformMatrix =
             Matrix.createTranslation(
@@ -71,6 +73,29 @@ class RenderSystem(
                     0f
                 )
             )
+
+        val animated = world.componentManager.getEntitiesWith<SpriteComponent, AnimatedSpriteComponent>()
+        animated.forEach {
+            val fps = animatedSpriteComponent.fps(it)
+            val endIndex = animatedSpriteComponent.endIndex(it)
+            if (fps <= 0f || endIndex <= 0) return@forEach
+
+            val frameCount = endIndex + 1
+            val frameDuration = 1f / fps
+            var elapsed = animatedSpriteComponent.elapsed(it) + gameTime.elapsedGameTimeSeconds
+            var currentIndex = animatedSpriteComponent.currentIndex(it).coerceIn(0, endIndex)
+
+            while (elapsed >= frameDuration) {
+                elapsed -= frameDuration
+                currentIndex = (currentIndex + 1) % frameCount
+            }
+
+            animatedSpriteComponent.update(
+                it,
+                currentIndexVal = currentIndex,
+                elapsedVal = elapsed
+            )
+        }
     }
 
     override fun draw(gameTime: GameTime) {
@@ -81,8 +106,8 @@ class RenderSystem(
         val animatedSpriteComponent = world.componentManager.get<AnimatedSpriteComponent>()
         val transformComponent = world.componentManager.get<TransformComponent>()
         
-        val single = world.componentManager.getEntitiesWith<SpriteComponent, SingleSpriteComponent>()
-        val animated = world.componentManager.getEntitiesWith<SpriteComponent, SingleSpriteComponent>()
+        val single = world.componentManager.getEntitiesWith<SpriteComponent, SingleSpriteComponent, TransformComponent>()
+        val animated = world.componentManager.getEntitiesWith<SpriteComponent, AnimatedSpriteComponent, TransformComponent>()
 
         batch.begin(
             depthStencilState = DepthStencilState.None,
@@ -91,13 +116,58 @@ class RenderSystem(
         )
         
         single.forEach {
-            /*batch.draw(
-                textures[spriteComponent.filename(it)],
-                transformComponent.pos(it) + spriteComponent.cellSize(it) * spriteComponent.pivot(it),
-                
-            )*/
+            drawSprite(
+                spriteComponent = spriteComponent,
+                transformComponent = transformComponent,
+                entity = it,
+                row = singleSpriteComponent.row(it),
+                column = singleSpriteComponent.column(it)
+            )
+        }
+
+        animated.forEach {
+            drawSprite(
+                spriteComponent = spriteComponent,
+                transformComponent = transformComponent,
+                entity = it,
+                row = animatedSpriteComponent.row(it),
+                column = animatedSpriteComponent.currentIndex(it)
+            )
         }
 
         batch.end()
     }
+
+    private fun drawSprite(
+        spriteComponent: SpriteComponent,
+        transformComponent: TransformComponent,
+        entity: Int,
+        row: Int,
+        column: Int
+    ) {
+        val cellWidth = spriteComponent.cellWidth(entity)
+        val cellHeight = spriteComponent.cellHeight(entity)
+        val sourceRectangle = Rectangle(
+            column * cellWidth,
+            row * cellHeight,
+            cellWidth,
+            cellHeight
+        )
+        val scale = transformComponent.scale(entity) * spriteComponent.scale(entity)
+
+        batch.draw(
+            texture = texture(spriteComponent.filename(entity)),
+            position = transformComponent.pos(entity),
+            sourceRectangle = sourceRectangle,
+            color = Color.White,
+            rotation = transformComponent.rotation(entity),
+            origin = spriteComponent.pivot(entity),
+            scale = scale
+        )
+    }
+
+    private fun texture(filename: String): Texture2D =
+        textures.getOrPut(filename) {
+            game.content.load<Texture2D>(filename)
+        }
 }

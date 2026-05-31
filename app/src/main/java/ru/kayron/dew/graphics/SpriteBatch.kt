@@ -464,7 +464,7 @@ class SpriteBatch(private val graphicsDevice: GraphicsDevice) {
 
         val finalMatrix =
             transformMatrix?.let {
-                projection * it
+                it * projection
             } ?: projection
 
         eff.setUniformMatrix(

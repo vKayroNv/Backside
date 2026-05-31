@@ -35,11 +35,29 @@ open class BacksideGame : Game() {
         w.componentManager.add(TransformComponent())
         w.componentManager.add(SpriteComponent())
         w.componentManager.add(SingleSpriteComponent())
+        w.componentManager.add(AnimatedSpriteComponent())
         w.systemManager.add(RenderSystem(this, w))
+        
+        val camera = w.entityManager.create()
+        val cc = w.componentManager.get<CameraComponent>()
+        cc.add(camera, 1f, 1920f, 1080f)
+        cc.setActive(camera)
+        w.componentManager.get<TransformComponent>().add(camera)
+        
+        val logo = w.entityManager.create()
+        w.componentManager.get<SpriteComponent>().add(
+            logo,
+            "logo.jpg",
+            707,
+            708
+        )
+        w.componentManager.get<SingleSpriteComponent>().add(logo)
+        w.componentManager.get<TransformComponent>().add(logo)
     }
     
     override fun initialize() {
         super.initialize()
+        w.systemManager.initialize()
     }
 
     override fun update(gameTime: GameTime) {

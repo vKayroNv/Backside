@@ -7,13 +7,21 @@ import ru.kayron.dew.ecs.IUpdateable
 import ru.kayron.dew.ecs.IDrawable
 
 class SystemManager {
+    var systems: Array<IGameSystem?> = arrayOfNulls<IGameSystem>(INITIAL_CAPACITY)
     var updateSystems: Array<IUpdateable?> = arrayOfNulls<IUpdateable>(INITIAL_CAPACITY)
     var drawSystems: Array<IDrawable?> = arrayOfNulls<IDrawable>(INITIAL_CAPACITY)
     
+    var systemSize = 0
     var updateSize = 0
     var drawSize = 0
     
     fun add(system: IGameSystem) {
+        systems = ArrayUtils.ensureCapacity(
+            systems,
+            systemSize,
+            null
+        )
+        systems[systemSize++] = system
         if (system is IUpdateable) {
             updateSystems = ArrayUtils.ensureCapacity(
                 updateSystems,
@@ -46,6 +54,12 @@ class SystemManager {
     fun draw(gameTime: GameTime) {
         drawSystems.forEach {
             it?.draw(gameTime)
+        }
+    }
+    
+    fun initialize() {
+        systems.forEach {
+            it?.initialize()
         }
     }
     
