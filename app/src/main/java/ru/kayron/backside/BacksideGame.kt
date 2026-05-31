@@ -3,6 +3,10 @@ package ru.kayron.backside
 import android.graphics.Canvas
 import android.graphics.Paint
 import androidx.core.graphics.createBitmap
+import ru.kayron.dew.systems.*
+import ru.kayron.dew.ecs.*
+import ru.kayron.dew.components.*
+import ru.kayron.dew.managers.*
 import ru.kayron.dew.Game
 import ru.kayron.dew.GameTime
 import ru.kayron.dew.graphics.DepthStencilState
@@ -17,11 +21,21 @@ import ru.kayron.dew.input.Keys
 import ru.kayron.dew.math.*
 
 open class BacksideGame : Game() {
-
-    private lateinit var batch: SpriteBatch
-
+    lateinit var w: World
+    lateinit var em: EntityManager
+    lateinit var cm: ComponentManager
+    lateinit var sm: SystemManager
+    
     override fun loadContent() {
-        batch = SpriteBatch(graphicsDevice)
+        em = EntityManager()
+        cm = ComponentManager()
+        sm = SystemManager()
+        w = World(em, cm, sm)
+        w.componentManager.add(CameraComponent())
+        w.componentManager.add(TransformComponent())
+        w.componentManager.add(SpriteComponent())
+        w.componentManager.add(SingleSpriteComponent())
+        w.systemManager.add(RenderSystem(this, w))
     }
     
     override fun initialize() {
@@ -33,19 +47,13 @@ open class BacksideGame : Game() {
             exit()
         }
         
+        w.systemManager.update(gameTime)
+        
         super.update(gameTime)
     }
 
     override fun draw(gameTime: GameTime) {
-        graphicsDevice.clear(Color.CornflowerBlue)
-
-        batch.begin(
-            depthStencilState = DepthStencilState.None,
-            rasterizerState = RasterizerState.CullNone
-        )
-
-        onDraw(batch)
-        batch.end()
+        w.systemManager.draw(gameTime)
         
         super.draw(gameTime)
     }
@@ -54,7 +62,6 @@ open class BacksideGame : Game() {
     protected open fun onDraw(batch: SpriteBatch) {}
 
     override fun dispose() {
-        batch.dispose()
         super.dispose()
     }
 }

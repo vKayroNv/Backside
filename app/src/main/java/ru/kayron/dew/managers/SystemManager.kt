@@ -1,5 +1,6 @@
 package ru.kayron.dew.managers
 
+import ru.kayron.dew.GameTime
 import ru.kayron.dew.utils.ArrayUtils
 import ru.kayron.dew.ecs.IGameSystem
 import ru.kayron.dew.ecs.IUpdateable
@@ -34,6 +35,18 @@ class SystemManager {
     fun sort() {
         updateSystems.sortBy { it?.updateOrder }
         drawSystems.sortBy { it?.drawOrder }
+    }
+    
+    fun update(gameTime: GameTime) {
+        updateSystems.forEach {
+            it?.update(gameTime)
+        }
+    }
+    
+    fun draw(gameTime: GameTime) {
+        drawSystems.forEach {
+            it?.draw(gameTime)
+        }
     }
     
     companion object {
