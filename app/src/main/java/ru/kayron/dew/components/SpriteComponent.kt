@@ -22,8 +22,8 @@ class SpriteComponent : Component() {
     fun add(
         entity: Entity,
         filenameVal: String,
-        widthVal: Int,
-        heightVal: Int,
+        widthVal: Int = 0,
+        heightVal: Int = 0,
         rowsVal: Int = 1,
         columnsVal: Int = 1,
         scaleXVal: Float = 1f,
@@ -37,12 +37,24 @@ class SpriteComponent : Component() {
         height[index] = heightVal
         rows[index] = rowsVal
         columns[index] = columnsVal
-        cellWidth[index] = widthVal / columnsVal
-        cellHeight[index] = heightVal / rowsVal
+        cellWidth[index] = if (widthVal > 0) widthVal / columnsVal else 0
+        cellHeight[index] = if (heightVal > 0) heightVal / rowsVal else 0
         scaleX[index] = scaleXVal
         scaleY[index] = scaleYVal
         pivotX[index] = pivotXVal
         pivotY[index] = pivotYVal
+    }
+
+    fun setSize(
+        entity: Entity,
+        widthVal: Int,
+        heightVal: Int
+    ) {
+        val index = indexOf(entity)
+        width[index] = widthVal
+        height[index] = heightVal
+        cellWidth[index] = widthVal / columns[index]
+        cellHeight[index] = heightVal / rows[index]
     }
     
     override fun grow(newSize: Int) {

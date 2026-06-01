@@ -1,63 +1,19 @@
 package ru.kayron.backside
 
-import android.graphics.Canvas
-import android.graphics.Paint
-import androidx.core.graphics.createBitmap
-import ru.kayron.dew.systems.*
-import ru.kayron.dew.ecs.*
-import ru.kayron.dew.components.*
-import ru.kayron.dew.managers.*
 import ru.kayron.dew.Game
 import ru.kayron.dew.GameTime
-import ru.kayron.dew.graphics.DepthStencilState
-import ru.kayron.dew.graphics.RasterizerState
-import ru.kayron.dew.graphics.SpriteBatch
-import ru.kayron.dew.graphics.SpriteFont
-import ru.kayron.dew.graphics.Texture2D
-import ru.kayron.dew.input.Touch
-import ru.kayron.dew.input.TouchLocation
 import ru.kayron.dew.input.Keyboard
 import ru.kayron.dew.input.Keys
-import ru.kayron.dew.math.*
+import ru.kayron.dew.managers.SceneManager
 
 open class BacksideGame : Game() {
-    lateinit var w: World
-    lateinit var em: EntityManager
-    lateinit var cm: ComponentManager
-    lateinit var sm: SystemManager
+    private lateinit var sceneManager: SceneManager
     
     override fun loadContent() {
-        em = EntityManager()
-        cm = ComponentManager()
-        sm = SystemManager()
-        w = World(em, cm, sm)
-        w.componentManager.add(CameraComponent())
-        w.componentManager.add(TransformComponent())
-        w.componentManager.add(SpriteComponent())
-        w.componentManager.add(SingleSpriteComponent())
-        w.componentManager.add(AnimatedSpriteComponent())
-        w.systemManager.add(RenderSystem(this, w))
-        
-        val camera = w.entityManager.create()
-        val cc = w.componentManager.get<CameraComponent>()
-        cc.add(camera, 1f, 1920f, 1080f)
-        cc.setActive(camera)
-        w.componentManager.get<TransformComponent>().add(camera)
-        
-        val logo = w.entityManager.create()
-        w.componentManager.get<SpriteComponent>().add(
-            logo,
-            "logo.jpg",
-            707,
-            708
-        )
-        w.componentManager.get<SingleSpriteComponent>().add(logo)
-        w.componentManager.get<TransformComponent>().add(logo)
-    }
-    
-    override fun initialize() {
-        super.initialize()
-        w.systemManager.initialize()
+        sceneManager = SceneManager(this)
+        sceneManager.add("test", TestScene(sceneManager))
+        sceneManager.initialize()
+        sceneManager.switchTo("test")
     }
 
     override fun update(gameTime: GameTime) {
@@ -65,21 +21,14 @@ open class BacksideGame : Game() {
             exit()
         }
         
-        w.systemManager.update(gameTime)
+        sceneManager.update(gameTime)
         
         super.update(gameTime)
     }
 
     override fun draw(gameTime: GameTime) {
-        w.systemManager.draw(gameTime)
+        sceneManager.draw(gameTime)
         
         super.draw(gameTime)
-    }
-
-    protected open fun onTouch(position: Vector2, state: TouchLocation.TouchLocationState) {}
-    protected open fun onDraw(batch: SpriteBatch) {}
-
-    override fun dispose() {
-        super.dispose()
     }
 }

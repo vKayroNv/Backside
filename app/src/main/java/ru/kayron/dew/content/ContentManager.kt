@@ -38,7 +38,7 @@ class ContentManager(private val game: Game) {
         if (lowerPath.endsWith(".png") || lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg") || lowerPath.endsWith(".bmp")) {
             val bitmap = openStream(path)?.use { BitmapFactory.decodeStream(it) }
                 ?: throw RuntimeException("Texture not found: $path")
-            return Texture2D.fromBitmap(bitmap)
+            return Texture2D.fromBitmap(bitmap, linear = false)
         }
         if (lowerPath.endsWith(".wav")) {
             val stream = openStream(path) ?: throw RuntimeException("Sound not found: $path")
