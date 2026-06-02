@@ -9,5 +9,7 @@ open class GameSystem(protected val game: Game) : IGameSystem, IUpdateable {
 
     override fun initialize() {}
 
+    override fun reloadGraphicsResources() {}
+
     override fun update(gameTime: GameTime) {}
 }

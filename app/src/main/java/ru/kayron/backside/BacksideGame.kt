@@ -8,6 +8,12 @@ import ru.kayron.dew.managers.SceneManager
 
 open class BacksideGame : Game() {
     private lateinit var sceneManager: SceneManager
+
+    override fun reloadGraphicsResources() {
+        super.reloadGraphicsResources()
+        content.unload()
+        sceneManager.reloadGraphicsResources()
+    }
     
     override fun loadContent() {
         sceneManager = SceneManager(this)

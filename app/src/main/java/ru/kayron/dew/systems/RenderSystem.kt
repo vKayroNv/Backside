@@ -48,6 +48,23 @@ class RenderSystem(
         resolveSpriteSizes()
     }
 
+    override fun reloadGraphicsResources() {
+        textures.clear()
+        batch.dispose()
+        defaultFont.texture.dispose()
+        fallbackTexture.dispose()
+
+        batch = SpriteBatch(game.graphicsDevice)
+        defaultFont = SpriteFont.fromSystemFont("monospace", 32f)
+        fallbackTexture = createFallbackTexture()
+
+        val filenames = world.componentManager.get<SpriteComponent>().filenames()
+        filenames.forEach {
+            texture(it)
+        }
+        resolveSpriteSizes()
+    }
+
     override fun update(gameTime: GameTime) {
         val cameraComponent = world.componentManager.get<CameraComponent>()
         val transformComponent = world.componentManager.get<TransformComponent>()

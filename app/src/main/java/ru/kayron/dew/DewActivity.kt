@@ -3,6 +3,7 @@ package ru.kayron.dew
 import android.os.Bundle
 import android.view.WindowInsets
 import android.view.WindowInsetsController
+import android.view.WindowManager
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import ru.kayron.dew.input.GamePad
@@ -16,6 +17,7 @@ abstract class DewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         hideSystemUi()
         GamePad.initialize(this)
         val createdGame = createGame()

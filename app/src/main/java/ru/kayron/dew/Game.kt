@@ -88,6 +88,10 @@ open class Game : View.OnKeyListener, View.OnTouchListener {
         lastFrameTimeNanos = System.nanoTime()
     }
 
+    open fun reloadGraphicsResources() {
+        graphicsDevice.initialize()
+    }
+
     override fun onKey(v: View, keyCode: Int, event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
             Keyboard.onKeyDown(keyCode)

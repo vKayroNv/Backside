@@ -55,6 +55,10 @@ class SceneManager(
     
     fun draw(gameTime: GameTime) = activeScene?.draw(gameTime)
 
+    fun reloadGraphicsResources() {
+        activeScene?.reloadGraphicsResources()
+    }
+
     private fun initializeScene(scene: Scene) {
         if (!initializedScenes.add(scene)) return
 

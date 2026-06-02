@@ -65,4 +65,8 @@ open class Scene(
     open fun draw(gameTime: GameTime) {
         systemManager.draw(gameTime)
     }
+
+    open fun reloadGraphicsResources() {
+        systemManager.reloadGraphicsResources()
+    }
 }

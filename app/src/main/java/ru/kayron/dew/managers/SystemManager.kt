@@ -62,6 +62,12 @@ class SystemManager {
             it?.initialize()
         }
     }
+
+    fun reloadGraphicsResources() {
+        systems.forEach {
+            it?.reloadGraphicsResources()
+        }
+    }
     
     companion object {
         val INITIAL_CAPACITY = 8

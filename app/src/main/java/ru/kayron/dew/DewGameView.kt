@@ -20,11 +20,13 @@ class DewGameView(
     private var surfaceWidth = 0
     private var surfaceHeight = 0
     private var initialized = false
+    private var contextRecreated = false
 
     init {
         setEGLContextClientVersion(3)
         setRenderer(this)
         renderMode = RENDERMODE_CONTINUOUSLY
+        setPreserveEGLContextOnPause(true)
 
         setOnKeyListener(game)
         setOnTouchListener(game)
@@ -35,6 +37,7 @@ class DewGameView(
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES30.glClearColor(0f, 0f, 0f, 1f)
+        contextRecreated = initialized
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -48,6 +51,9 @@ class DewGameView(
         if (!initialized) {
             game.run()
             initialized = true
+        } else if (contextRecreated) {
+            game.reloadGraphicsResources()
+            contextRecreated = false
         }
     }
 
