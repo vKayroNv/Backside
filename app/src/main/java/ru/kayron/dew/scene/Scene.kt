@@ -25,7 +25,6 @@ open class Scene(
         scope.addScoped { EntityManager() }
         scope.addScoped { ComponentManager() }
         scope.addScoped { SystemManager() }
-        scope.addScoped { UiManager() }
         scope.addScoped {
             World(
                 get(),
@@ -33,6 +32,7 @@ open class Scene(
                 get()
             )
         }
+        scope.addScoped { UiManager(get()) }
 
         entityManager = scope.get()
         componentManager = scope.get()

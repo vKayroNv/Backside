@@ -7,7 +7,9 @@ import ru.kayron.dew.components.CameraComponent
 import ru.kayron.dew.components.AnimatedSpriteComponent
 import ru.kayron.dew.components.SingleSpriteComponent
 import ru.kayron.dew.components.SpriteComponent
+import ru.kayron.dew.components.TextComponent
 import ru.kayron.dew.components.TransformComponent
+import ru.kayron.dew.components.UiComponent
 import ru.kayron.dew.ecs.DrawableGameSystem
 import ru.kayron.dew.ecs.World
 import ru.kayron.dew.graphics.DepthStencilState
@@ -19,14 +21,15 @@ import ru.kayron.dew.graphics.Texture2D
 import ru.kayron.dew.math.Color
 import ru.kayron.dew.math.Matrix
 import ru.kayron.dew.math.Rectangle
+import ru.kayron.dew.math.Vector2
 import ru.kayron.dew.math.Vector3
-import ru.kayron.dew.ui.UiManager
 import ru.kayron.dew.ui.UiRenderMode
+import ru.kayron.dew.ui.UiTheme
+import ru.kayron.dew.ui.Slider
 
 class RenderSystem(
     game: Game,
-    private val world: World,
-    private val uiManager: UiManager
+    private val world: World
 ) : DrawableGameSystem(game) {
 
     private lateinit var batch: SpriteBatch
@@ -35,6 +38,17 @@ class RenderSystem(
     private var transformMatrix = Matrix.Identity
     
     private val textures = hashMapOf<String, Texture2D>()
+
+    private val clipStack = mutableListOf<Rectangle>()
+
+    companion object {
+        private val themedControlTags = setOf(
+            "checkbox_unchecked", "checkbox_checked",
+            "radio_unselected", "radio_selected",
+            "slider",
+            "dropdown_item"
+        )
+    }
 
     override fun initialize() {
         batch = SpriteBatch(game.graphicsDevice)
@@ -124,7 +138,6 @@ class RenderSystem(
             )
         }
 
-        uiManager.update(transformMatrix)
     }
 
     override fun draw(gameTime: GameTime) {
@@ -134,6 +147,8 @@ class RenderSystem(
         val singleSpriteComponent = world.componentManager.get<SingleSpriteComponent>()
         val animatedSpriteComponent = world.componentManager.get<AnimatedSpriteComponent>()
         val transformComponent = world.componentManager.get<TransformComponent>()
+        val textComponent = world.componentManager.get<TextComponent>()
+        val uiComponent = world.componentManager.get<UiComponent>()
         
         val single = world.componentManager.getEntitiesWith<SpriteComponent, SingleSpriteComponent, TransformComponent>()
         val animated = world.componentManager.getEntitiesWith<SpriteComponent, AnimatedSpriteComponent, TransformComponent>()
@@ -141,51 +156,146 @@ class RenderSystem(
         beginWorld()
         
         single.forEach {
-            drawSprite(
-                spriteComponent = spriteComponent,
-                transformComponent = transformComponent,
-                entity = it,
-                row = singleSpriteComponent.row(it),
-                column = singleSpriteComponent.column(it)
-            )
+            if (shouldDraw(it, UiRenderMode.World, uiComponent)) {
+                drawSprite(
+                    spriteComponent = spriteComponent,
+                    transformComponent = transformComponent,
+                    uiComponent = uiComponent,
+                    entity = it,
+                    row = singleSpriteComponent.row(it),
+                    column = singleSpriteComponent.column(it)
+                )
+            }
         }
 
         animated.forEach {
-            drawSprite(
-                spriteComponent = spriteComponent,
-                transformComponent = transformComponent,
-                entity = it,
-                row = animatedSpriteComponent.row(it),
-                column = animatedSpriteComponent.currentIndex(it)
-            )
+            if (shouldDraw(it, UiRenderMode.World, uiComponent)) {
+                drawSprite(
+                    spriteComponent = spriteComponent,
+                    transformComponent = transformComponent,
+                    uiComponent = uiComponent,
+                    entity = it,
+                    row = animatedSpriteComponent.row(it),
+                    column = animatedSpriteComponent.currentIndex(it)
+                )
+            }
         }
 
-        batch.end()
-
-        beginWorld()
-        uiManager.draw(
-            batch = batch,
-            renderMode = UiRenderMode.World,
-            defaultFont = defaultFont,
-            texture = ::texture,
-            fallbackTexture = fallbackTexture
-        )
+        drawUiFallbacks(UiRenderMode.World, transformComponent, uiComponent)
+        drawText(UiRenderMode.World, transformComponent, textComponent, uiComponent)
         batch.end()
 
         beginStatic()
-        uiManager.draw(
-            batch = batch,
-            renderMode = UiRenderMode.Static,
-            defaultFont = defaultFont,
-            texture = ::texture,
-            fallbackTexture = fallbackTexture
-        )
+        single.forEach {
+            if (shouldDraw(it, UiRenderMode.Static, uiComponent)) {
+                drawSprite(
+                    spriteComponent = spriteComponent,
+                    transformComponent = transformComponent,
+                    uiComponent = uiComponent,
+                    entity = it,
+                    row = singleSpriteComponent.row(it),
+                    column = singleSpriteComponent.column(it)
+                )
+            }
+        }
+        animated.forEach {
+            if (shouldDraw(it, UiRenderMode.Static, uiComponent)) {
+                drawSprite(
+                    spriteComponent = spriteComponent,
+                    transformComponent = transformComponent,
+                    uiComponent = uiComponent,
+                    entity = it,
+                    row = animatedSpriteComponent.row(it),
+                    column = animatedSpriteComponent.currentIndex(it)
+                )
+            }
+        }
+        drawUiFallbacks(UiRenderMode.Static, transformComponent, uiComponent)
+        drawThemedControls(UiRenderMode.Static, transformComponent, uiComponent)
+        drawText(UiRenderMode.Static, transformComponent, textComponent, uiComponent)
+        drawDropdownItems(UiRenderMode.Static, transformComponent, uiComponent)
         batch.end()
+        endStatic()
+    }
+
+    private fun drawThemedControls(
+        renderMode: UiRenderMode,
+        transformComponent: TransformComponent,
+        uiComponent: UiComponent
+    ) {
+        world.componentManager.getEntitiesWith<UiComponent, TransformComponent>().forEach { entity ->
+            if (!shouldDraw(entity, renderMode, uiComponent)) return@forEach
+            val tag = uiComponent.styleTag(entity) ?: return@forEach
+            if (tag == "dropdown_item") return@forEach
+            val ex = transformComponent.x(entity)
+            val ey = transformComponent.y(entity)
+            val ew = transformComponent.width(entity)
+            val eh = transformComponent.height(entity)
+            if (ew <= 0f || eh <= 0f) return@forEach
+
+            val rect = clipRectFor(uiComponent, entity, transformComponent)
+            if (rect != null) pushClip(rect)
+
+            when (tag) {
+                "checkbox_unchecked", "checkbox_checked" -> {
+                    val tex = UiTheme.texture(tag)
+                    val cy = ey + (eh - 22f) * 0.5f
+                    batch.draw(tex, Rectangle(ex.toInt() + 2, cy.toInt(), 22, 22), color = Color.White)
+                }
+                "radio_unselected", "radio_selected" -> {
+                    val tex = UiTheme.texture(tag)
+                    val cy = ey + (eh - 22f) * 0.5f
+                    batch.draw(tex, Rectangle(ex.toInt() + 2, cy.toInt(), 22, 22), color = Color.White)
+                }
+                "slider" -> {
+                    val trackTex = UiTheme.texture("slider_track")
+                    val thumbTex = UiTheme.texture("slider_thumb")
+                    val trackY = ey + eh * 0.5f - 4f
+                    batch.draw(trackTex, Rectangle(ex.toInt(), trackY.toInt(), ew.toInt(), 8), color = Color(100, 100, 100))
+                    val normalized = Slider.getNormalized(entity)
+                    val thumbX = ex + 10f + (ew - 28f) * normalized
+                    batch.draw(thumbTex, Rectangle((thumbX - 9f).toInt(), (ey + eh * 0.5f - 9f).toInt(), 18, 18), color = Color.White)
+                }
+                "dropdown" -> {
+                    val arrowTex = UiTheme.texture("dropdown_arrow")
+                    val ax = ex + ew - 24f
+                    val ay = ey + (eh - 12f) * 0.5f
+                    batch.draw(arrowTex, Rectangle(ax.toInt(), ay.toInt(), 12, 12), color = Color.White)
+                }
+            }
+
+            if (rect != null) popClip()
+        }
+    }
+
+    private fun drawDropdownItems(
+        renderMode: UiRenderMode,
+        transformComponent: TransformComponent,
+        uiComponent: UiComponent
+    ) {
+        world.componentManager.getEntitiesWith<UiComponent, TransformComponent>().forEach { entity ->
+            val tag = uiComponent.styleTag(entity) ?: return@forEach
+            if (tag != "dropdown_item" || !shouldDraw(entity, renderMode, uiComponent)) return@forEach
+            val color = uiComponent.backgroundColor(entity)
+            if (color.a > 0 && transformComponent.width(entity) > 0f && transformComponent.height(entity) > 0f) {
+                batch.draw(fallbackTexture, rectangle(transformComponent, entity), color)
+            }
+            val textComponent = world.componentManager.get<TextComponent>()
+            if (textComponent.hasEntity(entity)) {
+                val text = textComponent.text(entity)
+                if (text.isNotEmpty()) {
+                    val font = textComponent.font(entity) ?: defaultFont
+                    val offset = textOffset(entity, transformComponent, textComponent, font, text)
+                    batch.drawString(font, text, transformComponent.pos(entity) + offset, textComponent.color(entity))
+                }
+            }
+        }
     }
 
     private fun drawSprite(
         spriteComponent: SpriteComponent,
         transformComponent: TransformComponent,
+        uiComponent: UiComponent,
         entity: Int,
         row: Int,
         column: Int
@@ -200,23 +310,200 @@ class RenderSystem(
             cellWidth,
             cellHeight
         )
-        val scale = transformComponent.scale(entity) * spriteComponent.scale(entity)
+        val isUi = uiComponent.hasEntity(entity)
+        val color = if (isUi) {
+            val base = uiComponent.backgroundColor(entity).takeIf { it.a > 0 } ?: Color.White
+            if (uiComponent.pressed(entity)) base * uiComponent.pressedTint(entity) else base
+        } else {
+            Color.White
+        }
 
-        batch.draw(
-            texture = texture(spriteComponent.filename(entity)),
-            position = transformComponent.pos(entity),
-            sourceRectangle = sourceRectangle,
-            color = Color.White,
-            rotation = transformComponent.rotation(entity),
-            origin = spriteComponent.pivot(entity),
-            scale = scale
+        val rect = if (isUi) clipRectFor(uiComponent, entity, transformComponent) else null
+        if (rect != null) pushClip(rect)
+
+        try {
+            if (isUi && transformComponent.width(entity) > 0f && transformComponent.height(entity) > 0f) {
+                batch.draw(
+                    texture = texture(spriteComponent.filename(entity)),
+                    destinationRectangle = rectangle(transformComponent, entity),
+                    sourceRectangle = sourceRectangle,
+                    color = color,
+                    rotation = transformComponent.rotation(entity),
+                    origin = spriteComponent.pivot(entity)
+                )
+            } else {
+                val scale = transformComponent.scale(entity) * spriteComponent.scale(entity)
+                batch.draw(
+                    texture = texture(spriteComponent.filename(entity)),
+                    position = transformComponent.pos(entity),
+                    sourceRectangle = sourceRectangle,
+                    color = color,
+                    rotation = transformComponent.rotation(entity),
+                    origin = spriteComponent.pivot(entity),
+                    scale = scale
+                )
+            }
+        } finally {
+            if (rect != null) popClip()
+        }
+    }
+
+    private fun drawUiFallbacks(
+        renderMode: UiRenderMode,
+        transformComponent: TransformComponent,
+        uiComponent: UiComponent
+    ) {
+        val spriteComponent = world.componentManager.get<SpriteComponent>()
+        world.componentManager.getEntitiesWith<UiComponent, TransformComponent>().forEach {
+            if (spriteComponent.hasEntity(it)) return@forEach
+            if (!shouldDraw(it, renderMode, uiComponent)) return@forEach
+            if (uiComponent.styleTag(it) in themedControlTags) return@forEach
+            val color = uiComponent.backgroundColor(it)
+            if (color.a == 0 || transformComponent.width(it) <= 0f || transformComponent.height(it) <= 0f) {
+                return@forEach
+            }
+            val drawColor = if (uiComponent.pressed(it)) color * uiComponent.pressedTint(it) else color
+
+            val rect = clipRectFor(uiComponent, it, transformComponent)
+            if (rect != null) pushClip(rect)
+
+            batch.draw(
+                texture = fallbackTexture,
+                destinationRectangle = rectangle(transformComponent, it),
+                color = drawColor
+            )
+
+            if (rect != null) popClip()
+        }
+    }
+
+    private fun drawText(
+        renderMode: UiRenderMode,
+        transformComponent: TransformComponent,
+        textComponent: TextComponent,
+        uiComponent: UiComponent
+    ) {
+        world.componentManager.getEntitiesWith<TextComponent, TransformComponent>().forEach {
+            if (!shouldDraw(it, renderMode, uiComponent)) return@forEach
+            if (uiComponent.styleTag(it) == "dropdown_item") return@forEach
+            val text = textComponent.text(it)
+            if (text.isEmpty()) return@forEach
+
+            val font = textComponent.font(it) ?: defaultFont
+            val offset = textOffset(it, transformComponent, textComponent, font, text)
+            val pos = transformComponent.pos(it) + offset
+
+            val rect = clipRectFor(uiComponent, it, transformComponent)
+            if (rect != null) pushClip(rect)
+
+            batch.drawString(
+                font,
+                text,
+                pos,
+                textComponent.color(it)
+            )
+
+            if (rect != null) popClip()
+        }
+    }
+
+    private fun clipRectFor(
+        uiComponent: UiComponent,
+        entity: Int,
+        transformComponent: TransformComponent
+    ): Rectangle? {
+        val left = uiComponent.clipLeft(entity)
+        val top = uiComponent.clipTop(entity)
+        val right = uiComponent.clipRight(entity)
+        val bottom = uiComponent.clipBottom(entity)
+        if (left.isInfinite()) return null
+
+        val clipRect = Rectangle(left.toInt(), top.toInt(), (right - left).toInt(), (bottom - top).toInt())
+        return clipRect.takeIf { !it.isEmpty }
+    }
+
+    private fun pushClip(rect: Rectangle) {
+        val vp = game.graphicsDevice.viewport
+        val current = if (clipStack.isEmpty()) {
+            Rectangle(0, 0, vp.width, vp.height)
+        } else {
+            clipStack.last()
+        }
+        val clipped = current.intersect(rect)
+        clipStack.add(clipped)
+        val glY = vp.height - (clipped.y + clipped.height)
+        game.graphicsDevice.setScissorRect(Rectangle(
+            clipped.x.coerceAtLeast(0),
+            glY.coerceAtLeast(0),
+            clipped.width.coerceAtMost(vp.width),
+            clipped.height.coerceAtMost(vp.height)
+        ))
+    }
+
+    private fun popClip() {
+        clipStack.removeLastOrNull()
+        val vp = game.graphicsDevice.viewport
+        if (clipStack.isEmpty()) {
+            game.graphicsDevice.setScissorRect(Rectangle(0, 0, vp.width, vp.height))
+        } else {
+            val clipped = clipStack.last()
+            val glY = vp.height - (clipped.y + clipped.height)
+            game.graphicsDevice.setScissorRect(Rectangle(
+                clipped.x.coerceAtLeast(0),
+                glY.coerceAtLeast(0),
+                clipped.width.coerceAtMost(vp.width),
+                clipped.height.coerceAtMost(vp.height)
+            ))
+        }
+    }
+
+    private fun textOffset(
+        entity: Int,
+        transformComponent: TransformComponent,
+        textComponent: TextComponent,
+        font: SpriteFont,
+        text: String
+    ): Vector2 {
+        val explicit = textComponent.offset(entity)
+        if (explicit.x != 0f || explicit.y != 0f) return explicit
+        if (transformComponent.width(entity) <= 0f || transformComponent.height(entity) <= 0f) {
+            return Vector2.Zero
+        }
+        val measured = font.measureString(text)
+        return Vector2(
+            (transformComponent.width(entity) - measured.x) * 0.5f,
+            (transformComponent.height(entity) - measured.y) * 0.5f
         )
     }
 
-    private fun texture(filename: String): Texture2D =
-        textures.getOrPut(filename) {
+    private fun shouldDraw(
+        entity: Int,
+        renderMode: UiRenderMode,
+        uiComponent: UiComponent
+    ): Boolean {
+        if (!uiComponent.hasEntity(entity)) return renderMode == UiRenderMode.World
+        return uiComponent.visible(entity) && uiComponent.renderMode(entity) == renderMode
+    }
+
+    private fun rectangle(
+        transformComponent: TransformComponent,
+        entity: Int
+    ): Rectangle = Rectangle(
+        transformComponent.x(entity).toInt(),
+        transformComponent.y(entity).toInt(),
+        transformComponent.width(entity).toInt(),
+        transformComponent.height(entity).toInt()
+    )
+
+    private fun texture(filename: String): Texture2D {
+        if (filename.startsWith("theme:")) {
+            val themeKey = filename.removePrefix("theme:")
+            return UiTheme.texture(themeKey)
+        }
+        return textures.getOrPut(filename) {
             game.content.load<Texture2D>(filename)
         }
+    }
 
     private fun beginWorld() {
         batch.begin(
@@ -228,11 +515,23 @@ class RenderSystem(
     }
 
     private fun beginStatic() {
+        game.graphicsDevice.setScissorRect(Rectangle(
+            game.graphicsDevice.viewport.x,
+            game.graphicsDevice.viewport.y,
+            game.graphicsDevice.viewport.width,
+            game.graphicsDevice.viewport.height
+        ))
+        GLScissor.enable()
+        clipStack.clear()
         batch.begin(
             samplerState = SamplerState.PointClamp,
             depthStencilState = DepthStencilState.None,
             rasterizerState = RasterizerState.CullNone
         )
+    }
+
+    private fun endStatic() {
+        GLScissor.disable()
     }
 
     private fun createFallbackTexture(): Texture2D {
@@ -256,5 +555,23 @@ class RenderSystem(
 
         val texture = texture(spriteComponent.filename(entity))
         spriteComponent.setSize(entity, texture.width, texture.height)
+    }
+}
+
+private object GLScissor {
+    private var scissorEnabled = false
+
+    fun enable() {
+        if (!scissorEnabled) {
+            android.opengl.GLES30.glEnable(android.opengl.GLES30.GL_SCISSOR_TEST)
+            scissorEnabled = true
+        }
+    }
+
+    fun disable() {
+        if (scissorEnabled) {
+            android.opengl.GLES30.glDisable(android.opengl.GLES30.GL_SCISSOR_TEST)
+            scissorEnabled = false
+        }
     }
 }

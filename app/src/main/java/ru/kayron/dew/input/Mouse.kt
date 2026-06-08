@@ -21,6 +21,13 @@ object Mouse {
         )
     }
 
+    internal fun onMove(x: Float, y: Float) {
+        currentState = currentState.copy(
+            x = x.toInt(),
+            y = y.toInt()
+        )
+    }
+
     internal fun onTouchUp() {
         currentState = currentState.copy(
             leftButton = MouseState.ButtonState.Released

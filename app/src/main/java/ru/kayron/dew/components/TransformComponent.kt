@@ -11,6 +11,8 @@ class TransformComponent : Component() {
     private var rotation = FloatArray(INITIAL_CAPACITY)
     private var scaleX = FloatArray(INITIAL_CAPACITY)
     private var scaleY = FloatArray(INITIAL_CAPACITY)
+    private var width = FloatArray(INITIAL_CAPACITY)
+    private var height = FloatArray(INITIAL_CAPACITY)
     
     fun add(
         entity: Entity, 
@@ -18,7 +20,9 @@ class TransformComponent : Component() {
         yVal: Float = 0f,
         rotationVal: Float = 0f,
         scaleXVal: Float = 1f,
-        scaleYVal: Float = 1f
+        scaleYVal: Float = 1f,
+        widthVal: Float = 0f,
+        heightVal: Float = 0f
     ) {
         val index = addEntity(entity)
         x[index] = xVal
@@ -26,6 +30,8 @@ class TransformComponent : Component() {
         rotation[index] = rotationVal
         scaleX[index] = scaleXVal
         scaleY[index] = scaleYVal
+        width[index] = widthVal
+        height[index] = heightVal
     }
     
     fun update(
@@ -34,7 +40,9 @@ class TransformComponent : Component() {
         yVal: Float? = null,
         rotationVal: Float? = null,
         scaleXVal: Float? = null,
-        scaleYVal: Float? = null
+        scaleYVal: Float? = null,
+        widthVal: Float? = null,
+        heightVal: Float? = null
     ) {
         val index = indexOf(entity)
         xVal?.let { x[index] = it }
@@ -42,6 +50,8 @@ class TransformComponent : Component() {
         rotationVal?.let { rotation[index] = it }
         scaleXVal?.let { scaleX[index] = it }
         scaleYVal?.let { scaleY[index] = it }
+        widthVal?.let { width[index] = it }
+        heightVal?.let { height[index] = it }
     }
     
     override fun grow(newSize: Int) {
@@ -50,6 +60,8 @@ class TransformComponent : Component() {
         rotation = rotation.copyOf(newSize)
         scaleX = scaleX.copyOf(newSize)
         scaleY = scaleY.copyOf(newSize)
+        width = width.copyOf(newSize)
+        height = height.copyOf(newSize)
     }
     
     override fun swap(a: Int, b: Int) {
@@ -58,6 +70,8 @@ class TransformComponent : Component() {
         rotation.swap(a, b)
         scaleX.swap(a, b)
         scaleY.swap(a, b)
+        width.swap(a, b)
+        height.swap(a, b)
     }
     
     fun x(entity: Entity) : Float = x[indexOf(entity)]
@@ -67,4 +81,7 @@ class TransformComponent : Component() {
     fun scaleX(entity: Entity) : Float = scaleX[indexOf(entity)]
     fun scaleY(entity: Entity) : Float = scaleY[indexOf(entity)]
     fun scale(entity: Entity) : Vector2 = Vector2(scaleX(entity), scaleY(entity))
+    fun width(entity: Entity) : Float = width[indexOf(entity)]
+    fun height(entity: Entity) : Float = height[indexOf(entity)]
+    fun size(entity: Entity) : Vector2 = Vector2(width(entity), height(entity))
 }

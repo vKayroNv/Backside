@@ -107,11 +107,17 @@ open class Game : View.OnKeyListener, View.OnTouchListener {
 
     override fun onTouch(v: View, event: MotionEvent): Boolean {
         Touch.onTouchEvent(event)
-        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-            Mouse.onTouch(event.x, event.y)
-        } else if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
-            Mouse.onTouchUp()
-            v.performClick()
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                Mouse.onTouch(event.x, event.y)
+            }
+            MotionEvent.ACTION_MOVE -> {
+                Mouse.onMove(event.x, event.y)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                Mouse.onTouchUp()
+                v.performClick()
+            }
         }
         return true
     }

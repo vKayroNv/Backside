@@ -7,9 +7,13 @@ import ru.kayron.dew.components.AnimatedSpriteComponent
 import ru.kayron.dew.components.CameraComponent
 import ru.kayron.dew.components.SingleSpriteComponent
 import ru.kayron.dew.components.SpriteComponent
+import ru.kayron.dew.components.TextComponent
 import ru.kayron.dew.components.TransformComponent
+import ru.kayron.dew.components.UiComponent
 import ru.kayron.dew.scene.Scene
 import ru.kayron.dew.systems.RenderSystem
+import ru.kayron.dew.systems.UiInteractionSystem
+import ru.kayron.dew.systems.UiLayoutSystem
 
 class SceneManager(
     private val game: Game
@@ -69,7 +73,11 @@ class SceneManager(
         components.add(scene.scope.create<SpriteComponent>())
         components.add(scene.scope.create<SingleSpriteComponent>())
         components.add(scene.scope.create<AnimatedSpriteComponent>())
+        components.add(scene.scope.create<TextComponent>())
+        components.add(scene.scope.create<UiComponent>())
 
+        scene.systemManager.add(scene.scope.create<UiLayoutSystem>())
+        scene.systemManager.add(scene.scope.create<UiInteractionSystem>())
         scene.systemManager.add(scene.scope.create<RenderSystem>())
         scene.initialize()
     }
