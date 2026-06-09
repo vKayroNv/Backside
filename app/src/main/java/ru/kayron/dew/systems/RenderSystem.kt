@@ -17,19 +17,24 @@ import ru.kayron.dew.graphics.RasterizerState
 import ru.kayron.dew.graphics.SamplerState
 import ru.kayron.dew.graphics.SpriteBatch
 import ru.kayron.dew.graphics.SpriteFont
+import ru.kayron.dew.graphics.SpriteSortMode
 import ru.kayron.dew.graphics.Texture2D
 import ru.kayron.dew.math.Color
 import ru.kayron.dew.math.Matrix
 import ru.kayron.dew.math.Rectangle
 import ru.kayron.dew.math.Vector2
 import ru.kayron.dew.math.Vector3
+import ru.kayron.dew.ui.UiElement
+import ru.kayron.dew.ui.UiManager
 import ru.kayron.dew.ui.UiRenderMode
 import ru.kayron.dew.ui.UiTheme
+import ru.kayron.dew.ui.ScrollView
 import ru.kayron.dew.ui.Slider
 
 class RenderSystem(
     game: Game,
-    private val world: World
+    private val world: World,
+    private val uiManager: UiManager
 ) : DrawableGameSystem(game) {
 
     private lateinit var batch: SpriteBatch
@@ -186,108 +191,119 @@ class RenderSystem(
         batch.end()
 
         beginStatic()
-        single.forEach {
-            if (shouldDraw(it, UiRenderMode.Static, uiComponent)) {
-                drawSprite(
-                    spriteComponent = spriteComponent,
-                    transformComponent = transformComponent,
-                    uiComponent = uiComponent,
-                    entity = it,
-                    row = singleSpriteComponent.row(it),
-                    column = singleSpriteComponent.column(it)
-                )
-            }
+
+        uiManager.roots.forEach {
+            drawUiTree(it, UiRenderMode.Static)
         }
-        animated.forEach {
-            if (shouldDraw(it, UiRenderMode.Static, uiComponent)) {
-                drawSprite(
-                    spriteComponent = spriteComponent,
-                    transformComponent = transformComponent,
-                    uiComponent = uiComponent,
-                    entity = it,
-                    row = animatedSpriteComponent.row(it),
-                    column = animatedSpriteComponent.currentIndex(it)
-                )
-            }
-        }
-        drawUiFallbacks(UiRenderMode.Static, transformComponent, uiComponent)
-        drawThemedControls(UiRenderMode.Static, transformComponent, uiComponent)
-        drawText(UiRenderMode.Static, transformComponent, textComponent, uiComponent)
-        drawDropdownItems(UiRenderMode.Static, transformComponent, uiComponent)
+
         batch.end()
         endStatic()
     }
 
-    private fun drawThemedControls(
-        renderMode: UiRenderMode,
-        transformComponent: TransformComponent,
-        uiComponent: UiComponent
+    private fun drawUiTree(
+        element: UiElement,
+        renderMode: UiRenderMode
     ) {
-        world.componentManager.getEntitiesWith<UiComponent, TransformComponent>().forEach { entity ->
-            if (!shouldDraw(entity, renderMode, uiComponent)) return@forEach
-            val tag = uiComponent.styleTag(entity) ?: return@forEach
-            if (tag == "dropdown_item") return@forEach
-            val ex = transformComponent.x(entity)
-            val ey = transformComponent.y(entity)
-            val ew = transformComponent.width(entity)
-            val eh = transformComponent.height(entity)
-            if (ew <= 0f || eh <= 0f) return@forEach
+        if (!element.visible) return
+        if (element.renderMode != renderMode) return
 
-            val rect = clipRectFor(uiComponent, entity, transformComponent)
-            if (rect != null) pushClip(rect)
+        if (element is ScrollView) {
+            pushClip(
+                Rectangle(
+                    element.x.toInt(),
+                    element.y.toInt(),
+                    element.width.toInt(),
+                    element.height.toInt()
+                )
+            )
+        }
 
-            when (tag) {
-                "checkbox_unchecked", "checkbox_checked" -> {
-                    val tex = UiTheme.texture(tag)
-                    val cy = ey + (eh - 22f) * 0.5f
-                    batch.draw(tex, Rectangle(ex.toInt() + 2, cy.toInt(), 22, 22), color = Color.White)
-                }
-                "radio_unselected", "radio_selected" -> {
-                    val tex = UiTheme.texture(tag)
-                    val cy = ey + (eh - 22f) * 0.5f
-                    batch.draw(tex, Rectangle(ex.toInt() + 2, cy.toInt(), 22, 22), color = Color.White)
-                }
-                "slider" -> {
-                    val trackTex = UiTheme.texture("slider_track")
-                    val thumbTex = UiTheme.texture("slider_thumb")
-                    val trackY = ey + eh * 0.5f - 4f
-                    batch.draw(trackTex, Rectangle(ex.toInt(), trackY.toInt(), ew.toInt(), 8), color = Color(100, 100, 100))
-                    val normalized = Slider.getNormalized(entity)
-                    val thumbX = ex + 10f + (ew - 28f) * normalized
-                    batch.draw(thumbTex, Rectangle((thumbX - 9f).toInt(), (ey + eh * 0.5f - 9f).toInt(), 18, 18), color = Color.White)
-                }
-                "dropdown" -> {
-                    val arrowTex = UiTheme.texture("dropdown_arrow")
-                    val ax = ex + ew - 24f
-                    val ay = ey + (eh - 12f) * 0.5f
-                    batch.draw(arrowTex, Rectangle(ax.toInt(), ay.toInt(), 12, 12), color = Color.White)
-                }
-            }
+        drawElement(element)
 
-            if (rect != null) popClip()
+        element.children.forEach {
+            drawUiTree(it, renderMode)
+        }
+
+        if (element is ScrollView) {
+            popClip()
         }
     }
 
-    private fun drawDropdownItems(
-        renderMode: UiRenderMode,
-        transformComponent: TransformComponent,
-        uiComponent: UiComponent
-    ) {
-        world.componentManager.getEntitiesWith<UiComponent, TransformComponent>().forEach { entity ->
-            val tag = uiComponent.styleTag(entity) ?: return@forEach
-            if (tag != "dropdown_item" || !shouldDraw(entity, renderMode, uiComponent)) return@forEach
-            val color = uiComponent.backgroundColor(entity)
-            if (color.a > 0 && transformComponent.width(entity) > 0f && transformComponent.height(entity) > 0f) {
-                batch.draw(fallbackTexture, rectangle(transformComponent, entity), color)
+    private fun drawElement(element: UiElement) {
+        val entity = element.entity
+        val transform = world.componentManager.get<TransformComponent>()
+        val ui = world.componentManager.get<UiComponent>()
+        val sprite = world.componentManager.get<SpriteComponent>()
+        val text = world.componentManager.get<TextComponent>()
+
+        if (sprite.hasEntity(entity)) {
+            val single = world.componentManager.get<SingleSpriteComponent>()
+            val animated = world.componentManager.get<AnimatedSpriteComponent>()
+            if (single.hasEntity(entity)) {
+                drawSprite(sprite, transform, ui, entity, single.row(entity), single.column(entity))
+            } else if (animated.hasEntity(entity)) {
+                drawSprite(sprite, transform, ui, entity, animated.row(entity), animated.currentIndex(entity))
             }
-            val textComponent = world.componentManager.get<TextComponent>()
-            if (textComponent.hasEntity(entity)) {
-                val text = textComponent.text(entity)
-                if (text.isNotEmpty()) {
-                    val font = textComponent.font(entity) ?: defaultFont
-                    val offset = textOffset(entity, transformComponent, textComponent, font, text)
-                    batch.drawString(font, text, transformComponent.pos(entity) + offset, textComponent.color(entity))
-                }
+        } else {
+            val color = ui.backgroundColor(entity)
+            if (color.a > 0 && transform.width(entity) > 0f && transform.height(entity) > 0f) {
+                batch.draw(fallbackTexture, rectangle(transform, entity), color)
+            }
+        }
+
+        drawControlDecoration(entity, transform, ui)
+
+        if (text.hasEntity(entity)) {
+            val value = text.text(entity)
+            if (value.isNotEmpty()) {
+                val font = text.font(entity) ?: defaultFont
+                batch.drawString(
+                    font,
+                    value,
+                    transform.pos(entity) + textOffset(entity, transform, text, font, value),
+                    text.color(entity)
+                )
+            }
+        }
+    }
+
+    private fun drawControlDecoration(
+        entity: Int,
+        transform: TransformComponent,
+        ui: UiComponent
+    ) {
+        val tag = ui.styleTag(entity) ?: return
+        val ex = transform.x(entity)
+        val ey = transform.y(entity)
+        val ew = transform.width(entity)
+        val eh = transform.height(entity)
+        if (ew <= 0f || eh <= 0f) return
+
+        when (tag) {
+            "checkbox_unchecked", "checkbox_checked" -> {
+                val tex = UiTheme.texture(tag)
+                val cy = ey + (eh - 22f) * 0.5f
+                batch.draw(tex, Rectangle(ex.toInt() + 2, cy.toInt(), 22, 22), color = Color.White)
+            }
+            "radio_unselected", "radio_selected" -> {
+                val tex = UiTheme.texture(tag)
+                val cy = ey + (eh - 22f) * 0.5f
+                batch.draw(tex, Rectangle(ex.toInt() + 2, cy.toInt(), 22, 22), color = Color.White)
+            }
+            "slider" -> {
+                val trackTex = UiTheme.texture("slider_track")
+                val thumbTex = UiTheme.texture("slider_thumb")
+                val trackY = ey + eh * 0.5f - 4f
+                batch.draw(trackTex, Rectangle(ex.toInt(), trackY.toInt(), ew.toInt(), 8), color = Color(100, 100, 100))
+                val normalized = Slider.getNormalized(entity)
+                val thumbX = ex + 10f + (ew - 28f) * normalized
+                batch.draw(thumbTex, Rectangle((thumbX - 9f).toInt(), (ey + eh * 0.5f - 9f).toInt(), 18, 18), color = Color.White)
+            }
+            "dropdown" -> {
+                val arrowTex = UiTheme.texture("dropdown_arrow")
+                val ax = ex + ew - 24f
+                val ay = ey + (eh - 12f) * 0.5f
+                batch.draw(arrowTex, Rectangle(ax.toInt(), ay.toInt(), 12, 12), color = Color.White)
             }
         }
     }
@@ -318,33 +334,26 @@ class RenderSystem(
             Color.White
         }
 
-        val rect = if (isUi) clipRectFor(uiComponent, entity, transformComponent) else null
-        if (rect != null) pushClip(rect)
-
-        try {
-            if (isUi && transformComponent.width(entity) > 0f && transformComponent.height(entity) > 0f) {
-                batch.draw(
-                    texture = texture(spriteComponent.filename(entity)),
-                    destinationRectangle = rectangle(transformComponent, entity),
-                    sourceRectangle = sourceRectangle,
-                    color = color,
-                    rotation = transformComponent.rotation(entity),
-                    origin = spriteComponent.pivot(entity)
-                )
-            } else {
-                val scale = transformComponent.scale(entity) * spriteComponent.scale(entity)
-                batch.draw(
-                    texture = texture(spriteComponent.filename(entity)),
-                    position = transformComponent.pos(entity),
-                    sourceRectangle = sourceRectangle,
-                    color = color,
-                    rotation = transformComponent.rotation(entity),
-                    origin = spriteComponent.pivot(entity),
-                    scale = scale
-                )
-            }
-        } finally {
-            if (rect != null) popClip()
+        if (isUi && transformComponent.width(entity) > 0f && transformComponent.height(entity) > 0f) {
+            batch.draw(
+                texture = texture(spriteComponent.filename(entity)),
+                destinationRectangle = rectangle(transformComponent, entity),
+                sourceRectangle = sourceRectangle,
+                color = color,
+                rotation = transformComponent.rotation(entity),
+                origin = spriteComponent.pivot(entity)
+            )
+        } else {
+            val scale = transformComponent.scale(entity) * spriteComponent.scale(entity)
+            batch.draw(
+                texture = texture(spriteComponent.filename(entity)),
+                position = transformComponent.pos(entity),
+                sourceRectangle = sourceRectangle,
+                color = color,
+                rotation = transformComponent.rotation(entity),
+                origin = spriteComponent.pivot(entity),
+                scale = scale
+            )
         }
     }
 
@@ -524,9 +533,10 @@ class RenderSystem(
         GLScissor.enable()
         clipStack.clear()
         batch.begin(
+            sortMode = SpriteSortMode.Immediate,
             samplerState = SamplerState.PointClamp,
             depthStencilState = DepthStencilState.None,
-            rasterizerState = RasterizerState.CullNone
+            rasterizerState = RasterizerState.CullNone.copy(scissorTestEnable = true)
         )
     }
 

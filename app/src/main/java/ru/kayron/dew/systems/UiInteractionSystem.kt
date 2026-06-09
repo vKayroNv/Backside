@@ -68,7 +68,7 @@ class UiInteractionSystem(
                 val active = uiManager.element(activeEntity)
                 if (active is ScrollView) {
                     val pointer = if (active.renderMode == UiRenderMode.Static) screenPosition else worldPosition
-                    active.captureDragStart(pointer.y - active.y)
+                    active.captureDragStart(pointer.x - active.x, pointer.y - active.y)
                 }
             }
         }

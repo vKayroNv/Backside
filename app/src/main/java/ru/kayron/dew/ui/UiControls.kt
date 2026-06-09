@@ -85,27 +85,40 @@ class ScrollView internal constructor(
 ) : UiElement(world, entity) {
     override val canInteract: Boolean = true
     var contentHeight: Float = 0f
+    var contentWidth: Float = 0f
+    var scrollOffsetX: Float = 0f
+    private var dragStartX: Float = 0f
     private var dragStartY: Float = 0f
-    private var dragStartOffset: Float = 0f
+    private var dragStartOffsetX: Float = 0f
+    private var dragStartOffsetY: Float = 0f
 
     init {
         this.backgroundColor = backgroundColor
     }
 
     override fun onPointerDrag(localPosition: Vector2) {
+        val dx = localPosition.x - dragStartX
         val dy = localPosition.y - dragStartY
-        scrollOffset = (dragStartOffset - dy).coerceAtLeast(0f)
+        scrollOffsetX = (dragStartOffsetX - dx).coerceIn(0f, maxScrollX())
+        scrollOffset = (dragStartOffsetY - dy).coerceIn(0f, maxScrollY())
     }
 
     override fun onPointerReleasedInside() {
+        dragStartX = 0f
         dragStartY = 0f
-        dragStartOffset = 0f
+        dragStartOffsetX = 0f
+        dragStartOffsetY = 0f
     }
 
-    internal fun captureDragStart(localY: Float) {
+    internal fun captureDragStart(localX: Float, localY: Float) {
+        dragStartX = localX
         dragStartY = localY
-        dragStartOffset = scrollOffset
+        dragStartOffsetX = scrollOffsetX
+        dragStartOffsetY = scrollOffset
     }
+
+    fun maxScrollX(): Float = (contentWidth - width).coerceAtLeast(0f)
+    fun maxScrollY(): Float = (contentHeight - height).coerceAtLeast(0f)
 }
 
 class GridView internal constructor(
@@ -228,6 +241,7 @@ class DropMenu internal constructor(
             btn.setBounds(0f, height + index * itemHeight, width, itemHeight)
             btn.visible = true
             btn.styleTag = "dropdown_item"
+            btn.resetClipRect()
             btn.uiManager = uiManager
             uiManager?.register(btn)
             add(btn)

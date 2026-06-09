@@ -43,10 +43,12 @@ class UiLayoutSystem(
                 child.localHeight
             )
             child.renderMode = parent.renderMode
-            child.clipLeft = parent.clipLeft
-            child.clipTop = parent.clipTop
-            child.clipRight = parent.clipRight
-            child.clipBottom = parent.clipBottom
+            if (child.styleTag != "dropdown_item") {
+                child.clipLeft = parent.clipLeft
+                child.clipTop = parent.clipTop
+                child.clipRight = parent.clipRight
+                child.clipBottom = parent.clipBottom
+            }
             layout(child)
         }
     }
@@ -105,6 +107,17 @@ class UiLayoutSystem(
         val scrollW = scroll.width
         val scrollH = scroll.height
 
+        var maxContentX = scrollW
+        var maxContentY = scrollH
+        scroll.children.forEach { child ->
+            val childRight = child.localX + (child.localWidth.takeIf { it > 0f } ?: scrollW)
+            val childBottom = child.localY + child.localHeight
+            if (childRight > maxContentX) maxContentX = childRight
+            if (childBottom > maxContentY) maxContentY = childBottom
+        }
+        scroll.contentWidth = maxContentX
+        scroll.contentHeight = maxContentY
+
         scroll.clipLeft = scrollX
         scroll.clipTop = scrollY
         scroll.clipRight = scrollX + scrollW
@@ -113,7 +126,7 @@ class UiLayoutSystem(
         scroll.children.forEach { child ->
             val childWidth = child.localWidth.takeIf { it > 0f } ?: scrollW
             child.arrange(
-                scrollX + child.localX,
+                scrollX + child.localX - scroll.scrollOffsetX,
                 scrollY + child.localY - scroll.scrollOffset,
                 childWidth,
                 child.localHeight
