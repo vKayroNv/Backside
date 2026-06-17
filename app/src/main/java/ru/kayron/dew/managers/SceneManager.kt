@@ -6,7 +6,7 @@ import ru.kayron.dew.GameTime
 import ru.kayron.dew.scene.Scene
 
 class SceneManager(
-    private val game: Game
+    val game: Game
 ) {
     val scope: CargoContainer = game.cargo.scope()
     

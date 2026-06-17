@@ -1,12 +1,8 @@
 package ru.kayron.backside.scenes
 
 import ru.kayron.backside.systems.CameraMovementSystem
-import ru.kayron.cargo.module
 import ru.kayron.dew.managers.SceneManager
-import ru.kayron.dew.math.Color
 import ru.kayron.dew.scene.Scene
-import ru.kayron.dew.ui.Orientation
-import ru.kayron.dew.ui.UiRenderMode
 import ru.kayron.dew.components.*
 
 class CameraMovementTestScene(
@@ -27,7 +23,13 @@ class CameraMovementTestScene(
         }
         
         val camera = entityManager.create()
-        componentManager.get<CameraComponent>().add(camera, 1f, 1920f, 1080f)
+        componentManager.get<CameraComponent>().add(
+            camera,
+            1f,
+            sceneManager.game.graphicsDevice.viewport.width.toFloat(),
+            sceneManager.game.graphicsDevice.viewport.height.toFloat()
+        )
+        componentManager.get<CameraComponent>().setActive(camera)
         componentManager.get<TransformComponent>().add(camera)
         val logo = entityManager.create()
         componentManager.get<TransformComponent>().add(

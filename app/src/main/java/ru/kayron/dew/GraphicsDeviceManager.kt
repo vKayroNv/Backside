@@ -21,8 +21,8 @@ class GraphicsDeviceManager(private val game: Game) : IGraphicsDeviceManager, IG
     private var initialized = false
 
     override fun createDevice() {
-        if (preferredBackBufferWidth <= 0) preferredBackBufferWidth = 1920
-        if (preferredBackBufferHeight <= 0) preferredBackBufferHeight = 1080
+        if (preferredBackBufferWidth <= 0) preferredBackBufferWidth = game.gameWindow.clientBounds.width
+        if (preferredBackBufferHeight <= 0) preferredBackBufferHeight = game.gameWindow.clientBounds.height
 
         val pp = graphicsDevice.presentationParameters
         pp.backBufferWidth = preferredBackBufferWidth
