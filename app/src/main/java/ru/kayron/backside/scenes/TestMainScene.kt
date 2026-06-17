@@ -45,6 +45,19 @@ class TestMainScene(
 
         y += cameraMovementTestButton.height + 16f
 
+        val worldGenerationTestButton = uiManager.button(
+            text = "World generation",
+            x = 32f,
+            y = y,
+            width = 800f,
+            height = 100f,
+            parent = verticalScroll
+        ) {
+            sceneManager.switchTo("worldGeneration")
+        }
+
+        y += worldGenerationTestButton.height + 16f
+
         val exitButton = uiManager.button(
             text = "Exit",
             x = 32f,

@@ -8,7 +8,9 @@ import ru.kayron.dew.input.Keys
 import ru.kayron.dew.managers.SceneManager
 import ru.kayron.backside.scenes.TestMainScene
 import ru.kayron.backside.scenes.CameraMovementTestScene
+import ru.kayron.backside.scenes.WorldGenerationTestScene
 import ru.kayron.backside.systems.CameraMovementSystem
+import ru.kayron.backside.systems.WorldGenerationSystem
 
 open class BacksideGame : Game() {
     private lateinit var sceneManager: SceneManager
@@ -22,14 +24,17 @@ open class BacksideGame : Game() {
     override fun loadContent() {
         cargo.load(module {
             singleton { SceneManager(this@BacksideGame) }
-            singleton { TestMainScene(get()) }
-            singleton { CameraMovementTestScene(get()) }
+            scoped { TestMainScene(get()) }
+            scoped { CameraMovementTestScene(get()) }
+            scoped { WorldGenerationTestScene(get()) }
             scoped { CameraMovementSystem(get(), get()) }
+            scoped { WorldGenerationSystem(get(),get()) }
         })
 
         sceneManager = cargo.get()
         sceneManager.add("test", cargo.get<TestMainScene>())
         sceneManager.add("cameraMovement", cargo.get<CameraMovementTestScene>())
+        sceneManager.add("worldGeneration", cargo.get<WorldGenerationTestScene>())
         sceneManager.initialize()
         sceneManager.switchTo("test")
     }
