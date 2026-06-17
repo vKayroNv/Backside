@@ -1,10 +1,14 @@
 package ru.kayron.backside
 
+import ru.kayron.cargo.module
 import ru.kayron.dew.Game
 import ru.kayron.dew.GameTime
 import ru.kayron.dew.input.Keyboard
 import ru.kayron.dew.input.Keys
 import ru.kayron.dew.managers.SceneManager
+import ru.kayron.backside.scenes.TestMainScene
+import ru.kayron.backside.scenes.CameraMovementTestScene
+import ru.kayron.backside.systems.CameraMovementSystem
 
 open class BacksideGame : Game() {
     private lateinit var sceneManager: SceneManager
@@ -16,8 +20,16 @@ open class BacksideGame : Game() {
     }
     
     override fun loadContent() {
-        sceneManager = SceneManager(this)
-        sceneManager.add("test", TestScene(sceneManager))
+        cargo.load(module {
+            singleton { SceneManager(this@BacksideGame) }
+            singleton { TestMainScene(get()) }
+            singleton { CameraMovementTestScene(get()) }
+            scoped { CameraMovementSystem(get(), get()) }
+        })
+
+        sceneManager = cargo.get()
+        sceneManager.add("test", cargo.get<TestMainScene>())
+        sceneManager.add("cameraMovement", cargo.get<CameraMovementTestScene>())
         sceneManager.initialize()
         sceneManager.switchTo("test")
     }

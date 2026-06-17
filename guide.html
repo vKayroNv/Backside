@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backside Engine — Руководство по пакетам ru.kayron.cargo и ru.kayron.dew</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --fg: #e6edf3;
+  --accent: #58a6ff;
+  --accent2: #3fb950;
+  --border: #30363d;
+  --code-bg: #161b22;
+  --heading: #f0f6fc;
+  --muted: #8b949e;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.7; }
+nav.toc { width: 300px; position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; background: #0d1117; border-right: 1px solid var(--border); padding: 24px 16px; z-index: 10; transition: transform 0.3s ease; }
+nav.toc h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 16px; }
+nav.toc a { display: block; padding: 4px 0; font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+nav.toc a:hover { color: var(--accent); }
+nav.toc a.section { color: var(--fg); font-weight: 600; margin-top: 12px; font-size: 13px; }
+nav.toc a.sub { padding-left: 16px; font-size: 12px; }
+main { margin-left: 300px; max-width: 960px; padding: 40px 48px 80px; }
+#menu-toggle { display: none; position: fixed; top: 12px; left: 12px; z-index: 20; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--fg); width: 40px; height: 40px; font-size: 22px; cursor: pointer; align-items: center; justify-content: center; }
+#menu-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9; }
+@media (max-width: 768px) {
+  body { display: block; }
+  nav.toc { transform: translateX(-100%); width: 280px; }
+  nav.toc.open { transform: translateX(0); }
+  main { margin-left: 0; padding: 16px 16px 80px; }
+  #menu-toggle { display: flex; }
+  #menu-overlay.show { display: block; }
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 16px; }
+  pre { font-size: 12px; padding: 12px; margin: 8px -8px 16px; border-radius: 0; }
+  table { font-size: 12px; }
+  th, td { padding: 6px 8px; }
+  .table-wrap { overflow-x: auto; margin: 8px -8px 16px; }
+  .table-wrap table { min-width: 500px; }
+  code { font-size: 12px; }
+}
+@media (max-width: 480px) {
+  main { padding: 12px 12px 60px; }
+  h1 { font-size: 20px; }
+  h2 { font-size: 17px; }
+  h3 { font-size: 14px; }
+  pre { font-size: 11px; padding: 10px; }
+  table { font-size: 11px; }
+  th, td { padding: 4px 6px; }
+  .badge { font-size: 10px; padding: 1px 6px; }
+}
+h1 { font-size: 36px; font-weight: 700; color: var(--heading); margin-bottom: 8px; }
+h1 + p { color: var(--muted); font-size: 16px; margin-bottom: 40px; }
+h2 { font-size: 24px; font-weight: 600; color: var(--heading); margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 18px; font-weight: 600; color: var(--heading); margin-top: 32px; margin-bottom: 8px; }
+h4 { font-size: 15px; font-weight: 600; color: var(--accent); margin-top: 20px; margin-bottom: 6px; }
+p { margin-bottom: 12px; }
+code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'JetBrains Mono', 'Fira Code', monospace; color: #f97583; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; overflow-x: auto; margin: 12px 0 20px; font-size: 13px; font-family: 'JetBrains Mono', 'Fira Code', monospace; line-height: 1.5; }
+pre .kw { color: #ff7b72; }
+pre .ty { color: #79c0ff; }
+pre .fn { color: #d2a8ff; }
+pre .str { color: #a5d6ff; }
+pre .cm { color: #8b949e; font-style: italic; }
+pre .nl { color: #ffa657; }
+pre .num { color: #79c0ff; }
+pre .op { color: #ff7b72; }
+pre .pr { color: #d2a8ff; }
+ul, ol { margin: 8px 0 16px 24px; }
+li { margin-bottom: 4px; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border: 1px solid var(--border); }
+th { background: var(--code-bg); color: var(--heading); font-weight: 600; }
+tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+.badge-class { background: #1f6feb33; color: #58a6ff; }
+.badge-fn { background: #3fb95033; color: #3fb950; }
+.badge-iface { background: #bc8cff33; color: #bc8cff; }
+.badge-enum { background: #d2992233; color: #d29922; }
+.badge-obj { background: #f8514933; color: #f85149; }
+.badge-ann { background: #db6d2833; color: #db6d28; }
+</style>
+</head>
+<body>
+
+<button id="menu-toggle" onclick="toggleToc()">&#9776;</button>
+<div id="menu-overlay" onclick="toggleToc()"></div>
+
+<nav class="toc">
+<h2>Содержание</h2>
+<a href="#intro" class="section">Введение</a>
+<a href="#cargo" class="section">1. ru.kayron.cargo — DI-контейнер</a>
+<a href="#cargo-overview" class="sub">Обзор</a>
+<a href="#cargo-cargo" class="sub">Cargo</a>
+<a href="#cargo-cargocontainer" class="sub">CargoContainer</a>
+<a href="#cargo-cargomodule" class="sub">CargoModule</a>
+<a href="#cargo-configuration" class="sub">Configuration</a>
+<a href="#cargo-disposable" class="sub">Disposable</a>
+<a href="#cargo-factorydelegate" class="sub">FactoryDelegate</a>
+<a href="#cargo-initializable" class="sub">Initializable</a>
+<a href="#cargo-lifetime" class="sub">Lifetime</a>
+<a href="#cargo-named" class="sub">Named</a>
+<a href="#cargo-provider" class="sub">Provider</a>
+<a href="#cargo-typekey" class="sub">TypeKey</a>
+<a href="#cargo-registration" class="sub">Registration / RegistrationKey</a>
+<a href="#cargo-constructorinfo" class="sub">ConstructorInfo / ParameterInfo</a>
+<a href="#cargo-examples" class="sub">Примеры</a>
+
+<a href="#dew" class="section">2. ru.kayron.dew — Игровой движок</a>
+<a href="#dew-game" class="sub">Game</a>
+<a href="#dew-gamewindow" class="sub">GameWindow / GameTime</a>
+<a href="#dew-activity" class="sub">DewActivity / DewGameView</a>
+<a href="#dew-graphicsdevice" class="sub">GraphicsDevice / Manager</a>
+
+<a href="#dew-ecs" class="section">3. ECS</a>
+<a href="#dew-ecs-core" class="sub">Component / Entity / World</a>
+<a href="#dew-ecs-systems" class="sub">IGameSystem / IUpdateable / IDrawable</a>
+<a href="#dew-ecs-gamesystem" class="sub">GameSystem / DrawableGameSystem</a>
+<a href="#dew-managers" class="sub">Менеджеры</a>
+<a href="#dew-components" class="sub">Компоненты</a>
+
+<a href="#dew-render" class="section">4. Рендеринг</a>
+<a href="#dew-spritebatch" class="sub">SpriteBatch</a>
+<a href="#dew-texture" class="sub">Texture / Texture2D</a>
+<a href="#dew-spritefont" class="sub">SpriteFont</a>
+<a href="#dew-effect" class="sub">Effect / BasicEffect</a>
+<a href="#dew-states" class="sub">Состояния</a>
+
+<a href="#dew-scene" class="section">5. Сцены и UI</a>
+<a href="#dew-scene-class" class="sub">Scene</a>
+<a href="#dew-scenemanager" class="sub">SceneManager</a>
+<a href="#dew-uielement" class="sub">UiElement</a>
+<a href="#dew-uicontrols" class="sub">UiControls</a>
+<a href="#dew-uimanager" class="sub">UiManager</a>
+<a href="#dew-uitheme" class="sub">UiTheme</a>
+<a href="#dew-systems" class="sub">Системы UI</a>
+
+<a href="#dew-input" class="section">6. Ввод</a>
+<a href="#dew-keyboard" class="sub">Keyboard</a>
+<a href="#dew-mouse" class="sub">Mouse</a>
+<a href="#dew-touch" class="sub">Touch</a>
+<a href="#dew-gamepad" class="sub">GamePad</a>
+
+<a href="#dew-math" class="section">7. Математика</a>
+<a href="#dew-math-vec" class="sub">Vector2 / Vector3 / Vector4</a>
+<a href="#dew-math-matrix" class="sub">Matrix</a>
+<a href="#dew-math-other" class="sub">Color / Rectangle / Quaternion / Point</a>
+<a href="#dew-mathhelper" class="sub">MathHelper</a>
+
+<a href="#dew-audio" class="section">8. Аудио</a>
+<a href="#dew-audio-classes" class="sub">SoundEffect / SoundEffectInstance</a>
+<a href="#dew-audio-other" class="sub">AudioEmitter / AudioListener / AudioEngine</a>
+
+<a href="#dew-content" class="section">9. Контент</a>
+
+<a href="#appendix" class="section">Приложение: BacksideGame + MainActivity</a>
+</nav>
+
+<main>
+
+<h1 id="intro">Backside Engine</h1>
+<p>Руководство по использованию пакетов <code>ru.kayron.cargo</code> (DI-контейнер) и <code>ru.kayron.dew</code> (игровой движок на OpenGL ES 3.0 для Android).</p>
+
+<!-- ======================================================================== -->
+<h2 id="cargo">1. Пакет ru.kayron.cargo — Dependency Injection</h2>
+
+<h3 id="cargo-overview">Обзор</h3>
+<p>Cargo — это лёгкий IoC-контейнер с поддержкой трёх времени жизни (Lifetime): <code>SINGLETON</code>, <code>SCOPED</code>, <code>TRANSIENT</code>. Контейнер умеет автоматически разрешать зависимости через primary-конструктор, поддерживает Named-квалификаторы, ленивую загрузку (<code>Lazy</code>), провайдеры (<code>Provider</code>), вложенные скоупы и отложенную инициализацию.</p>
+
+<!-- Cargo object -->
+<h3 id="cargo-cargo"><span class="badge badge-obj">object</span> Cargo</h3>
+<pre><code><span class="kw">object</span> <span class="ty">Cargo</span> {
+    <span class="kw">val</span> <span class="nl">root</span> = <span class="ty">CargoContainer</span>()
+}</code></pre>
+<p><strong>Описание:</strong> Точка входа. Содержит единственный корневой контейнер. Все игровые объекты используют <code>Cargo.root</code> как глобальный DI-контейнер.</p>
+
+<!-- CargoContainer -->
+<h3 id="cargo-cargocontainer"><span class="badge badge-class">class</span> CargoContainer</h3>
+<pre><code><span class="kw">class</span> <span class="ty">CargoContainer</span>(<span class="kw">private val</span> <span class="nl">parent</span>: <span class="ty">CargoContainer</span>? = <span class="kw">null</span>)
+    : <span class="ty">AutoCloseable</span></code></pre>
+
+<h4>Методы регистрации</h4>
+
+<p><strong>addSingleton</strong> — регистрирует singleton-зависимость:</p>
+<pre><code><span class="kw">fun</span> &lt;<span class="ty">T</span>: <span class="ty">Any</span>&gt; <span class="fn">addSingleton</span>(
+    <span class="nl">type</span>: <span class="ty">KClass</span>&lt;<span class="ty">T</span>&gt;,
+    <span class="nl">qualifier</span>: <span class="ty">String</span>? = <span class="kw">null</span>,
+    <span class="nl">factory</span>: <span class="ty">CargoContainer</span>.() -> <span class="ty">T</span>
+)</code></pre>
+<p>Reified-версия: <code>inline fun &lt;reified T : Any&gt; addSingleton(qualifier: String? = null, noinline factory: CargoContainer.() -> T)</code></p>
+<p>Перегрузка с готовым экземпляром: <code>fun &lt;T : Any&gt; addSingleton(type: KClass&lt;T&gt;, instance: T)</code></p>
+
+<p><strong>addScoped</strong> — регистрирует scoped-зависимость (живёт в пределах дочернего контейнера):</p>
+<pre><code><span class="kw">fun</span> &lt;<span class="ty">T</span>: <span class="ty">Any</span>&gt; <span class="fn">addScoped</span>(
+    <span class="nl">type</span>: <span class="ty">KClass</span>&lt;<span class="ty">T</span>&gt;,
+    <span class="nl">qualifier</span>: <span class="ty">String</span>? = <span class="kw">null</span>,
+    <span class="nl">factory</span>: <span class="ty">CargoContainer</span>.() -> <span class="ty">T</span>
+)</code></pre>
+
+<p><strong>addTransient</strong> — регистрирует transient-зависимость (новый экземпляр при каждом запросе):</p>
+<pre><code><span class="kw">fun</span> &lt;<span class="ty">T</span>: <span class="ty">Any</span>&gt; <span class="fn">addTransient</span>(
+    <span class="nl">type</span>: <span class="ty">KClass</span>&lt;<span class="ty">T</span>&gt;,
+    <span class="nl">qualifier</span>: <span class="ty">String</span>? = <span class="kw">null</span>,
+    <span class="nl">factory</span>: <span class="ty">CargoContainer</span>.() -> <span class="ty">T</span>
+)</code></pre>
+
+<p><strong>bindSingleton / bindScoped / bindTransient</strong> — связывание абстракции с реализацией без фабрики (авто-создание через конструктор):</p>
+<pre><code><span class="kw">fun</span> &lt;<span class="ty">TAbstraction</span>: <span class="ty">Any</span>, <span class="ty">TImplementation</span>: <span class="ty">TAbstraction</span>&gt;
+    <span class="fn">bindSingleton</span>(
+    <span class="nl">abstraction</span>: <span class="ty">KClass</span>&lt;<span class="ty">TAbstraction</span>&gt;,
+    <span class="nl">implementation</span>: <span class="ty">KClass</span>&lt;<span class="ty">TImplementation</span>&gt;,
+    <span class="nl">qualifier</span>: <span class="ty">String</span>? = <span class="kw">null</span>
+)</code></pre>
+
+<p><strong>addConfig</strong> — регистрирует конфигурацию как singleton:</p>
+<pre><code><span class="kw">fun</span> &lt;<span class="ty">T</span>: <span class="ty">Configuration</span>&gt; <span class="fn">addConfig</span>(
+    <span class="nl">type</span>: <span class="ty">KClass</span>&lt;<span class="ty">T</span>&gt;,
+    <span class="nl">config</span>: <span class="ty">T</span>
+)</code></pre>
+
+<h4>Методы получения</h4>
+<p><strong>get</strong> — получает зарегистрированную зависимость:</p>
+<pre><code><span class="kw">fun</span> &lt;<span class="ty">T</span>: <span class="ty">Any</span>&gt; <span class="fn">get</span>(
+    <span class="nl">type</span>: <span class="ty">KClass</span>&lt;<span class="ty">T</span>&gt;,
+    <span class="nl">qualifier</span>: <span class="ty">String</span>? = <span class="kw">null</span>
+): <span class="ty">T</span>
+
+<span class="cm">// reified inline-версия:</span>
+<span class="kw">inline fun</span> &lt;<span class="kw">reified</span> <span class="ty">T</span>: <span class="ty">Any</span>&gt; <span class="fn">get</span>(
+    <span class="nl">qualifier</span>: <span class="ty">String</span>? = <span class="kw">null</span>
+): <span class="ty">T</span></code></pre>
+
+<p><strong>create</strong> — создаёт экземпляр вне регистрации, передавая внешние аргументы в конструктор:</p>
+<pre><code><span class="kw">fun</span> &lt;<span class="ty">T</span>: <span class="ty">Any</span>&gt; <span class="fn">create</span>(
+    <span class="nl">type</span>: <span class="ty">KClass</span>&lt;<span class="ty">T</span>&gt;,
+    <span class="kw">vararg</span> <span class="nl">arguments</span>: <span class="ty">Any</span>
+): <span class="ty">T</span></code></pre>
+
+<h4>Управление контейнером</h4>
+<p><strong>load(module: CargoModule)</strong> — загружает модуль с набором регистраций.<br>
+<strong>freeze()</strong> — замораживает контейнер, запрещая дальнейшие регистрации.<br>
+<strong>build()</strong> — валидирует граф зависимостей, создаёт eager-синглтоны и замораживает контейнер.<br>
+<strong>scope()</strong> — создаёт дочерний контейнер с родительской цепочкой.<br>
+<strong>dispose()</strong> — освобождает все scoped и singleton-экземпляры (только для root-контейнера).</p>
+
+<!-- CargoModule -->
+<h3 id="cargo-cargomodule"><span class="badge badge-class">class</span> CargoModule</h3>
+<pre><code><span class="kw">class</span> <span class="ty">CargoModule</span> {
+    <span class="kw">fun</span> &lt;<span class="ty">T</span>: <span class="ty">Any</span>&gt; <span class="fn">singleton</span>(...)
+    <span class="kw">fun</span> &lt;<span class="ty">T</span>: <span class="ty">Any</span>&gt; <span class="fn">scoped</span>(...)
+    <span class="kw">fun</span> &lt;<span class="ty">T</span>: <span class="ty">Any</span>&gt; <span class="fn">transient</span>(...)
+}</code></pre>
+<p>Используется вместе с топ-левел функцией <code>module { }</code> для группировки регистраций:</p>
+<pre><code><span class="kw">fun</span> <span class="fn">module</span>(
+    <span class="nl">block</span>: <span class="ty">CargoModule</span>.() -> <span class="ty">Unit</span>
+): <span class="ty">CargoModule</span></code></pre>
+
+<!-- Configuration -->
+<h3 id="cargo-configuration"><span class="badge badge-iface">interface</span> Configuration</h3>
+<pre><code><span class="kw">interface</span> <span class="ty">Configuration</span> {
+    <span class="kw">val</span> <span class="nl">name</span>: <span class="ty">String</span>
+}</code></pre>
+
+<!-- Disposable -->
+<h3 id="cargo-disposable"><span class="badge badge-iface">interface</span> Disposable</h3>
+<pre><code><span class="kw">interface</span> <span class="ty">Disposable</span> {
+    <span class="kw">fun</span> <span class="fn">dispose</span>()
+}</code></pre>
+<p>Альтернатива <code>AutoCloseable</code>. Контейнер вызывает <code>dispose()</code> при освобождении скоупа или рут-контейнера.</p>
+
+<!-- FactoryDelegate -->
+<h3 id="cargo-factorydelegate"><span class="badge badge-iface">fun interface</span> FactoryDelegate</h3>
+<pre><code><span class="kw">fun interface</span> <span class="ty">FactoryDelegate</span> {
+    <span class="kw">fun</span> <span class="fn">create</span>(<span class="nl">container</span>: <span class="ty">CargoContainer</span>): <span class="ty">Any</span>
+}</code></pre>
+
+<!-- Initializable -->
+<h3 id="cargo-initializable"><span class="badge badge-iface">interface</span> Initializable</h3>
+<pre><code><span class="kw">interface</span> <span class="ty">Initializable</span> {
+    <span class="kw">fun</span> <span class="fn">initialize</span>()
+}</code></pre>
+<p>Если созданный экземпляр реализует данный интерфейс, контейнер автоматически вызывает <code>initialize()</code> после создания.</p>
+
+<!-- Lifetime -->
+<h3 id="cargo-lifetime"><span class="badge badge-enum">enum</span> Lifetime</h3>
+<pre><code><span class="kw">enum class</span> <span class="ty">Lifetime</span> {
+    <span class="nl">SINGLETON</span>,  <span class="cm">// один экземпляр на весь root-контейнер</span>
+    <span class="nl">SCOPED</span>,     <span class="cm">// один экземпляр на дочерний контейнер</span>
+    <span class="nl">TRANSIENT</span>   <span class="cm">// новый экземпляр при каждом запросе</span>
+}</code></pre>
+
+<!-- Named -->
+<h3 id="cargo-named"><span class="badge badge-ann">annotation</span> Named</h3>
+<pre><code><span class="nd">@Target</span>(<span class="ty">AnnotationTarget</span>.<span class="nl">VALUE_PARAMETER</span>)
+<span class="nd">@Retention</span>(<span class="ty">AnnotationRetention</span>.<span class="nl">RUNTIME</span>)
+<span class="kw">annotation class</span> <span class="ty">Named</span>(<span class="kw">val</span> <span class="nl">value</span>: <span class="ty">String</span>)</code></pre>
+<p>Позволяет квалифицировать параметр конструктора. Используется вместе с <code>qualifier</code> в регистрации.</p>
+
+<!-- Provider -->
+<h3 id="cargo-provider"><span class="badge badge-iface">fun interface</span> Provider</h3>
+<pre><code><span class="kw">fun interface</span> <span class="ty">Provider</span>&lt;<span class="ty">T</span>&gt; {
+    <span class="kw">fun</span> <span class="fn">get</span>(): <span class="ty">T</span>
+}</code></pre>
+<p>Если параметр конструктора имеет тип <code>Provider&lt;T&gt;</code>, контейнер внедряет фабрику, которая каждый раз запрашивает свежий экземпляр из контейнера.</p>
+
+<!-- TypeKey -->
+<h3 id="cargo-typekey"><span class="badge badge-class">sealed class</span> TypeKey</h3>
+<pre><code><span class="kw">sealed class</span> <span class="ty">TypeKey</span> {
+    <span class="kw">abstract val</span> <span class="nl">raw</span>: <span class="ty">KClass</span>&lt;*&gt;
+
+    <span class="kw">data class</span> <span class="ty">Simple</span>(<span class="kw">override val</span> <span class="nl">raw</span>: <span class="ty">KClass</span>&lt;*&gt;): <span class="ty">TypeKey</span>()
+    <span class="kw">data class</span> <span class="ty">Generic</span>(<span class="kw">override val</span> <span class="nl">raw</span>: <span class="ty">KClass</span>&lt;*&gt;, <span class="kw">val</span> <span class="nl">arguments</span>: <span class="ty">List</span>&lt;<span class="ty">TypeKey</span>&gt;): <span class="ty">TypeKey</span>()
+
+    <span class="kw">companion object</span> {
+        <span class="kw">fun</span> <span class="fn">from</span>(<span class="nl">type</span>: <span class="ty">KType</span>): <span class="ty">TypeKey</span>
+    }
+}</code></pre>
+
+<h3 id="cargo-registration"><span class="badge badge-class">data class</span> Registration / RegistrationKey</h3>
+<pre><code><span class="kw">internal data class</span> <span class="ty">RegistrationKey</span>(
+    <span class="kw">val</span> <span class="nl">type</span>: <span class="ty">TypeKey</span>,
+    <span class="kw">val</span> <span class="nl">qualifier</span>: <span class="ty">String</span>?
+)
+
+<span class="kw">internal data class</span> <span class="ty">Registration</span>(
+    <span class="kw">val</span> <span class="nl">abstraction</span>: <span class="ty">TypeKey</span>,
+    <span class="kw">val</span> <span class="nl">implementation</span>: <span class="ty">TypeKey</span>?,
+    <span class="kw">val</span> <span class="nl">factory</span>: <span class="ty">FactoryDelegate</span>?,
+    <span class="kw">val</span> <span class="nl">lifetime</span>: <span class="ty">Lifetime</span>,
+    <span class="kw">val</span> <span class="nl">qualifier</span>: <span class="ty">String</span>?,
+    <span class="kw">val</span> <span class="nl">eager</span>: <span class="ty">Boolean</span>
+)</code></pre>
+
+<h3 id="cargo-constructorinfo"><span class="badge badge-class">data class</span> ConstructorInfo / ParameterInfo</h3>
+<pre><code><span class="kw">internal data class</span> <span class="ty">ConstructorInfo</span>(
+    <span class="kw">val</span> <span class="nl">constructor</span>: <span class="ty">KFunction</span>&lt;*&gt;,
+    <span class="kw">val</span> <span class="nl">parameters</span>: <span class="ty">List</span>&lt;<span class="ty">ParameterInfo</span>&gt;
+)
+
+<span class="kw">internal data class</span> <span class="ty">ParameterInfo</span>(
+    <span class="kw">val</span> <span class="nl">parameter</span>: <span class="ty">KParameter</span>,
+    <span class="kw">val</span> <span class="nl">type</span>: <span class="ty">TypeKey</span>,
+    <span class="kw">val</span> <span class="nl">qualifier</span>: <span class="ty">String</span>?,
+    <span class="kw">val</span> <span class="nl">lazy</span>: <span class="ty">Boolean</span>,
+    <span class="kw">val</span> <span class="nl">provider</span>: <span class="ty">Boolean</span>,
+    <span class="kw">val</span> <span class="nl">nullable</span>: <span class="ty">Boolean</span>
+)</code></pre>
+
+<h3 id="cargo-examples">Примеры использования Cargo</h3>
+
+<h4>Базовая регистрация и получение</h4>
+<pre><code><span class="cm">// регистрация с фабрикой</span>
+<span class="ty">Cargo</span>.root.<span class="fn">addSingleton</span> {
+    <span class="ty">MyService</span>()
+}
+
+<span class="cm">// получение</span>
+<span class="kw">val</span> service = <span class="ty">Cargo</span>.root.<span class="fn">get</span>&lt;<span class="ty">MyService</span>&gt;()
+
+<span class="cm">// binding абстракции к реализации</span>
+<span class="ty">Cargo</span>.root.<span class="fn">bindSingleton</span>&lt;<span class="ty">IService</span>, <span class="ty">MyService</span>&gt;()
+
+<span class="cm">// получение через интерфейс</span>
+<span class="kw">val</span> service: <span class="ty">IService</span> = <span class="ty">Cargo</span>.root.<span class="fn">get</span>()</code></pre>
+
+<h4>Named-квалификаторы</h4>
+<pre><code><span class="cm">// регистрация с квалификатором</span>
+<span class="ty">Cargo</span>.root.<span class="fn">addSingleton</span>&lt;<span class="ty">Database</span>&gt;(<span class="str">"users"</span>) {
+    <span class="ty">Database</span>(<span class="str">"users.db"</span>)
+}
+<span class="ty">Cargo</span>.root.<span class="fn">addSingleton</span>&lt;<span class="ty">Database</span>&gt;(<span class="str">"logs"</span>) {
+    <span class="ty">Database</span>(<span class="str">"logs.db"</span>)
+}
+
+<span class="cm">// получение с квалификатором</span>
+<span class="kw">val</span> usersDb = <span class="ty">Cargo</span>.root.<span class="fn">get</span>&lt;<span class="ty">Database</span>&gt;(<span class="str">"users"</span>)
+
+<span class="cm">// использование аннотации @Named в конструкторе</span>
+<span class="kw">class</span> <span class="ty">ReportService</span>(
+    <span class="nd">@Named</span>(<span class="str">"users"</span>) <span class="kw">private val</span> <span class="nl">db</span>: <span class="ty">Database</span>
+)</code></pre>
+
+<h4>Lazy и Provider</h4>
+<pre><code><span class="kw">class</span> <span class="ty">Consumer</span>(
+    <span class="kw">private val</span> <span class="nl">lazyService</span>: <span class="ty">Lazy</span>&lt;<span class="ty">HeavyService</span>&gt;,  <span class="cm">// создаётся при первом обращении</span>
+    <span class="kw">private val</span> <span class="nl">provider</span>: <span class="ty">Provider</span>&lt;<span class="ty">TransientService</span>&gt;  <span class="cm">// каждый get() даёт новый экземпляр</span>
+)</code></pre>
+
+<h4>Модули</h4>
+<pre><code><span class="kw">val</span> databaseModule = <span class="fn">module</span> {
+    <span class="fn">singleton</span>&lt;<span class="ty">Database</span>&gt; { <span class="ty">Database</span>(<span class="str">"app.db"</span>) }
+    <span class="fn">transient</span>&lt;<span class="ty">Repository</span>&gt; { <span class="ty">Repository</span>(<span class="fn">get</span>()) }
+}
+
+<span class="ty">Cargo</span>.root.<span class="fn">load</span>(databaseModule)
+<span class="ty">Cargo</span>.root.<span class="fn">build</span>()</code></pre>
+
+<h4>Скоупы</h4>
+<pre><code><span class="kw">val</span> childScope = <span class="ty">Cargo</span>.root.<span class="fn">scope</span>()
+childScope.<span class="fn">addScoped</span> { <span class="ty">Session</span>() }
+
+<span class="kw">val</span> session = childScope.<span class="fn">get</span>&lt;<span class="ty">Session</span>&gt;()
+
+<span class="cm">// scoped-объекты уничтожаются при dispose скоупа</span>
+childScope.<span class="fn">dispose</span>()</code></pre>
+
+<!-- ======================================================================== -->
+<h2 id="dew">2. Пакет ru.kayron.dew — Игровой движок</h2>
+
+<h3 id="dew-game"><span class="badge badge-class">class</span> Game</h3>
+<pre><code><span class="kw">open class</span> <span class="ty">Game</span> : <span class="ty">View</span>.<span class="ty">OnKeyListener</span>, <span class="ty">View</span>.<span class="ty">OnTouchListener</span></code></pre>
+<p>Главный класс игры. Управляет игровым циклом, графическим устройством, контентом и вводом.</p>
+
+<table>
+<div class="table-wrap"><table>
+<tr><th>Свойство</th><th>Тип</th><th>Описание</th></tr>
+<tr><td>graphicsDevice</td><td>GraphicsDevice</td><td>Графическое устройство OpenGL ES 3.0</td></tr>
+<tr><td>gameWindow</td><td>GameWindow</td><td>Окно игры</td></tr>
+<tr><td>cargo</td><td>CargoContainer</td><td>Корневой DI-контейнер</td></tr>
+<tr><td>graphicsDeviceManager</td><td>GraphicsDeviceManager</td><td>Менеджер графических параметров</td></tr>
+<tr><td>content</td><td>ContentManager</td><td>Менеджер загрузки ресурсов</td></tr>
+<tr><td>isActive</td><td>Boolean</td><td>Активна ли игра</td></tr>
+<tr><td>isMouseVisible</td><td>Boolean</td><td>Виден ли курсор</td></tr>
+<tr><td>exitRequested</td><td>Boolean</td><td>Запрошен ли выход</td></tr>
+</table></div>
+
+<div class="table-wrap"><table>
+<tr><th>Метод</th><th>Описание</th></tr>
+<tr><td>initialize()</td><td>Инициализация: создание устройства + loadContent()</td></tr>
+<tr><td>loadContent()</td><td>Загрузка контента (переопределяется)</td></tr>
+<tr><td>unloadContent()</td><td>Выгрузка контента</td></tr>
+<tr><td>update(gameTime)</td><td>Обновление логики (переопределяется)</td></tr>
+<tr><td>draw(gameTime)</td><td>Отрисовка (переопределяется)</td></tr>
+<tr><td>run()</td><td>Запуск игры (вызов initialize)</td></tr>
+<tr><td>tick()</td><td>Один кадр: вычисление времени → update → draw → present</td></tr>
+<tr><td>exit()</td><td>Запросить выход из игры</td></tr>
+<tr><td>resetElapsedTime()</td><td>Сброс таймера</td></tr>
+<tr><td>reloadGraphicsResources()</td><td>Перезагрузка графических ресурсов</td></tr>
+<tr><td>dispose()</td><td>Освобождение ресурсов</td></tr>
+</table></div>
+
+<h3 id="dew-gamewindow"><span class="badge badge-class">class</span> GameWindow / GameTime</h3>
+<pre><code><span class="kw">open class</span> <span class="ty">GameWindow</span> {
+    <span class="kw">var</span> <span class="nl">clientBounds</span>: <span class="ty">Rectangle</span>
+    <span class="kw">var</span> <span class="nl">currentOrientation</span>: <span class="ty">DisplayOrientation</span>
+    <span class="kw">var</span> <span class="nl">view</span>: <span class="ty">View</span>?
+    <span class="kw">var</span> <span class="nl">allowUserResizing</span>: <span class="ty">Boolean</span>
+    <span class="kw">fun</span> <span class="fn">setClientBounds</span>(<span class="nl">width</span>: <span class="ty">Int</span>, <span class="nl">height</span>: <span class="ty">Int</span>)
+}
+
+<span class="kw">data class</span> <span class="ty">GameTime</span>(
+    <span class="kw">var</span> <span class="nl">totalGameTime</span>: <span class="ty">Long</span> = 0L,       <span class="cm">// наносекунды</span>
+    <span class="kw">var</span> <span class="nl">elapsedGameTime</span>: <span class="ty">Long</span> = 0L,      <span class="cm">// наносекунды</span>
+    <span class="kw">var</span> <span class="nl">isRunningSlowly</span>: <span class="ty">Boolean</span> = <span class="kw">false</span>
+) {
+    <span class="kw">val</span> <span class="nl">totalGameTimeSeconds</span>: <span class="ty">Float</span>     <span class="cm">// totalGameTime / 1e9</span>
+    <span class="kw">val</span> <span class="nl">elapsedGameTimeSeconds</span>: <span class="ty">Float</span>  <span class="cm">// elapsedGameTime / 1e9</span>
+}</code></pre>
+
+<h3 id="dew-activity"><span class="badge badge-class">class</span> DewActivity / DewGameView</h3>
+<pre><code><span class="kw">abstract class</span> <span class="ty">DewActivity</span> : <span class="ty">AppCompatActivity</span>() {
+    <span class="kw">protected abstract fun</span> <span class="fn">createGame</span>(): <span class="ty">Game</span>
+}</code></pre>
+<p>Базовый Android-активити. Создаёт <code>DewGameView</code>, скрывает системный UI, управляет паузой/возобновлением/уничтожением.</p>
+
+<pre><code><span class="kw">class</span> <span class="ty">DewGameView</span>(<span class="nl">context</span>: <span class="ty">Context</span>, <span class="kw">private val</span> <span class="nl">game</span>: <span class="ty">Game</span>)
+    : <span class="ty">GLSurfaceView</span>(<span class="nl">context</span>), <span class="ty">GLSurfaceView</span>.<span class="ty">Renderer</span></code></pre>
+<p>View с OpenGL ES 3.0. В <code>onSurfaceChanged</code> вызывает <code>game.run()</code>, в <code>onDrawFrame</code> — <code>game.tick()</code>.</p>
+
+<h3 id="dew-graphicsdevice"><span class="badge badge-class">class</span> GraphicsDevice / GraphicsDeviceManager / IGraphicsDeviceService</h3>
+<pre><code><span class="kw">class</span> <span class="ty">GraphicsDevice</span> {
+    <span class="kw">val</span> <span class="nl">presentationParameters</span>: <span class="ty">PresentationParameters</span>
+    <span class="kw">var</span> <span class="nl">viewport</span>: <span class="ty">Viewport</span>
+    <span class="kw">fun</span> <span class="fn">initialize</span>()            <span class="cm">// установка OpenGL-параметров</span>
+    <span class="kw">fun</span> <span class="fn">clear</span>(<span class="nl">color</span>: <span class="ty">Color</span>)         <span class="cm">// очистка экрана цветом</span>
+    <span class="kw">fun</span> <span class="fn">setViewport</span>(...)          <span class="cm">// установка области вывода</span>
+    <span class="kw">fun</span> <span class="fn">setRenderTarget</span>(...)      <span class="cm">// установка RenderTarget2D или null</span>
+    <span class="kw">fun</span> <span class="fn">drawPrimitives</span>(...)       <span class="cm">// отрисовка примитивов без индексов</span>
+    <span class="kw">fun</span> <span class="fn">drawIndexedPrimitives</span>(...) <span class="cm">// отрисовка с индексами</span>
+    <span class="kw">fun</span> <span class="fn">present</span>()                 <span class="cm">// завершение кадра</span>
+    <span class="kw">fun</span> <span class="fn">setScissorRect</span>(...)        <span class="cm">// прямоугольник отсечения</span>
+    <span class="kw">fun</span> <span class="fn">dispose</span>()                 <span class="cm">// освобождение ресурсов</span>
+}
+
+<span class="kw">interface</span> <span class="ty">IGraphicsDeviceService</span> {
+    <span class="kw">val</span> <span class="nl">graphicsDevice</span>: <span class="ty">GraphicsDevice</span>
+}
+
+<span class="kw">interface</span> <span class="ty">IGraphicsDeviceManager</span> {
+    <span class="kw">fun</span> <span class="fn">createDevice</span>()
+    <span class="kw">fun</span> <span class="fn">applyChanges</span>()
+}
+
+<span class="kw">class</span> <span class="ty">GraphicsDeviceManager</span>(<span class="kw">private val</span> <span class="nl">game</span>: <span class="ty">Game</span>)
+    : <span class="ty">IGraphicsDeviceManager</span>, <span class="ty">IGraphicsDeviceService</span> {
+    <span class="kw">var</span> <span class="nl">preferredBackBufferWidth</span>: <span class="ty">Int</span>        <span class="cm">// 0 = авто (1920)</span>
+    <span class="kw">var</span> <span class="nl">preferredBackBufferHeight</span>: <span class="ty">Int</span>       <span class="cm">// 0 = авто (1080)</span>
+    <span class="kw">var</span> <span class="nl">preferredBackBufferFormat</span>: <span class="ty">SurfaceFormat</span>
+    <span class="kw">var</span> <span class="nl">preferredDepthStencilFormat</span>: <span class="ty">DepthFormat</span>
+    <span class="kw">var</span> <span class="nl">preferredMultiSampleCount</span>: <span class="ty">Int</span>       <span class="cm">// 0 = no MSAA</span>
+    <span class="kw">var</span> <span class="nl">synchronizedWithVerticalRetrace</span>: <span class="ty">Boolean</span>
+    <span class="kw">var</span> <span class="nl">isFullScreen</span>: <span class="ty">Boolean</span>
+    <span class="kw">fun</span> <span class="fn">toggleFullScreen</span>()
+}</code></pre>
+
+<!-- ======================================================================== -->
+<h2 id="dew-ecs">3. ECS — Entity-Component-System</h2>
+
+<h3 id="dew-ecs-core">Component / Entity / World</h3>
+
+<h4><span class="badge badge-class">abstract class</span> Component</h4>
+<pre><code><span class="kw">abstract class</span> <span class="ty">Component</span> {
+    <span class="kw">val</span> <span class="nl">entitiesCount</span>: <span class="ty">Int</span>
+    <span class="kw">fun</span> <span class="fn">hasEntity</span>(<span class="nl">entity</span>: <span class="ty">Entity</span>): <span class="ty">Boolean</span>
+    <span class="kw">fun</span> <span class="fn">entities</span>(): <span class="ty">List</span>&lt;<span class="ty">Entity</span>&gt;
+    <span class="kw">fun</span> <span class="fn">remove</span>(<span class="nl">entity</span>: <span class="ty">Entity</span>)
+    <span class="kw">fun</span> <span class="fn">clear</span>()
+    <span class="kw">protected abstract fun</span> <span class="fn">grow</span>(<span class="nl">newSize</span>: <span class="ty">Int</span>)
+    <span class="kw">protected abstract fun</span> <span class="fn">swap</span>(<span class="nl">a</span>: <span class="ty">Int</span>, <span class="nl">b</span>: <span class="ty">Int</span>)
+    <span class="kw">protected fun</span> <span class="fn">addEntity</span>(<span class="nl">entity</span>: <span class="ty">Entity</span>): <span class="ty">Int</span>
+    <span class="kw">protected fun</span> <span class="fn">indexOf</span>(<span class="nl">entity</span>: <span class="ty">Entity</span>): <span class="ty">Int</span>
+}</code></pre>
+<p>База для всех типов компонентов. Использует структуру с плотным упакованным массивом (packed array / archetype). Начальная ёмкость — 128.</p>
+
+<h4><span class="badge badge-type">typealias</span> Entity = Int</h4>
+<p>Сущность — просто целое число (ID).</p>
+
+<h4><span class="badge badge-class">class</span> World</h4>
+<pre><code><span class="kw">class</span> <span class="ty">World</span>(
+    <span class="kw">val</span> <span class="nl">entityManager</span>: <span class="ty">EntityManager</span>,
+    <span class="kw">val</span> <span class="nl">componentManager</span>: <span class="ty">ComponentManager</span>,
+    <span class="kw">val</span> <span class="nl">systemManager</span>: <span class="ty">SystemManager</span>
+)</code></pre>
+
+<h3 id="dew-ecs-systems">IGameSystem / IUpdateable / IDrawable</h3>
+<pre><code><span class="kw">interface</span> <span class="ty">IGameSystem</span> {
+    <span class="kw">fun</span> <span class="fn">initialize</span>()
+    <span class="kw">fun</span> <span class="fn">reloadGraphicsResources</span>()
+}
+
+<span class="kw">interface</span> <span class="ty">IUpdateable</span> {
+    <span class="kw">val</span> <span class="nl">updateOrder</span>: <span class="ty">Int</span>
+    <span class="kw">var</span> <span class="nl">enabled</span>: <span class="ty">Boolean</span>
+    <span class="kw">fun</span> <span class="fn">update</span>(<span class="nl">gameTime</span>: <span class="ty">GameTime</span>)
+}
+
+<span class="kw">interface</span> <span class="ty">IDrawable</span> {
+    <span class="kw">val</span> <span class="nl">drawOrder</span>: <span class="ty">Int</span>
+    <span class="kw">var</span> <span class="nl">visible</span>: <span class="ty">Boolean</span>
+    <span class="kw">fun</span> <span class="fn">draw</span>(<span class="nl">gameTime</span>: <span class="ty">GameTime</span>)
+}</code></pre>
+
+<h3 id="dew-ecs-gamesystem">GameSystem / DrawableGameSystem</h3>
+<pre><code><span class="kw">open class</span> <span class="ty">GameSystem</span>(<span class="kw">protected val</span> <span class="nl">game</span>: <span class="ty">Game</span>)
+    : <span class="ty">IGameSystem</span>, <span class="ty">IUpdateable</span>
+
+<span class="kw">open class</span> <span class="ty">DrawableGameSystem</span>(<span class="nl">game</span>: <span class="ty">Game</span>)
+    : <span class="ty">GameSystem</span>(<span class="nl">game</span>), <span class="ty">IDrawable</span></code></pre>
+
+<h3 id="dew-managers">Менеджеры</h3>
+
+<h4><span class="badge badge-class">class</span> EntityManager</h4>
+<pre><code><span class="kw">class</span> <span class="ty">EntityManager</span> {
+    <span class="kw">var</span> <span class="nl">nextId</span>: <span class="ty">Entity</span> = 1
+    <span class="kw">fun</span> <span class="fn">create</span>(): <span class="ty">Entity</span>   <span class="cm">// новый ID или переиспользование удалённого</span>
+    <span class="kw">fun</span> <span class="fn">remove</span>(<span class="nl">entity</span>: <span class="ty">Entity</span>)  <span class="cm">// помещает в пул свободных ID</span>
+    <span class="kw">fun</span> <span class="fn">reset</span>()
+}</code></pre>
+
+<h4><span class="badge badge-class">class</span> ComponentManager</h4>
+<pre><code><span class="kw">class</span> <span class="ty">ComponentManager</span> {
+    <span class="kw">fun</span> &lt;<span class="ty">T</span>: <span class="ty">Component</span>&gt; <span class="fn">get</span>(<span class="nl">type</span>: <span class="ty">KClass</span>&lt;<span class="ty">T</span>&gt;): <span class="ty">T</span>
+    <span class="kw">inline fun</span> &lt;<span class="kw">reified</span> <span class="ty">T</span>: <span class="ty">Component</span>&gt; <span class="fn">get</span>(): <span class="ty">T</span>
+    <span class="kw">fun</span> <span class="fn">getEntitiesWith</span>(<span class="nl">type</span>: <span class="ty">KClass</span>&lt;*&gt;, <span class="kw">vararg</span> <span class="nl">types</span>: <span class="ty">KClass</span>&lt;*&gt;): <span class="ty">List</span>&lt;<span class="ty">Entity</span>&gt;
+    <span class="kw">inline fun</span> &lt;<span class="kw">reified</span> <span class="ty">T</span>&gt; <span class="fn">getEntitiesWith</span>(): <span class="ty">List</span>&lt;<span class="ty">Entity</span>&gt;  <span class="cm">// до 7 типов</span>
+    <span class="kw">fun</span> <span class="fn">add</span>(<span class="nl">storage</span>: <span class="ty">Component</span>)
+    <span class="kw">fun</span> <span class="fn">removeEntity</span>(<span class="nl">entity</span>: <span class="ty">Entity</span>)
+    <span class="kw">fun</span> <span class="fn">reset</span>()
+}</code></pre>
+
+<h4><span class="badge badge-class">class</span> SystemManager</h4>
+<pre><code><span class="kw">class</span> <span class="ty">SystemManager</span> {
+    <span class="kw">fun</span> <span class="fn">add</span>(<span class="nl">system</span>: <span class="ty">IGameSystem</span>)
+    <span class="kw">fun</span> <span class="fn">sort</span>()    <span class="cm">// сортирует по updateOrder / drawOrder</span>
+    <span class="kw">fun</span> <span class="fn">update</span>(<span class="nl">gameTime</span>: <span class="ty">GameTime</span>)
+    <span class="kw">fun</span> <span class="fn">draw</span>(<span class="nl">gameTime</span>: <span class="ty">GameTime</span>)
+    <span class="kw">fun</span> <span class="fn">initialize</span>()
+    <span class="kw">fun</span> <span class="fn">reloadGraphicsResources</span>()
+}</code></pre>
+
+<h3 id="dew-components">Компоненты</h3>
+
+<div class="table-wrap"><table>
+<tr><th>Компонент</th><th>Поля (на entity)</th><th>Описание</th></tr>
+<tr><td>TransformComponent</td><td>x, y, rotation, scaleX, scaleY, width, height</td><td>Позиция, поворот, масштаб и размер</td></tr>
+<tr><td>VelocityComponent</td><td>vx, vy</td><td>Скорость</td></tr>
+<tr><td>SpriteComponent</td><td>filename, width, height, rows, columns, cellWidth/Height, scaleX/Y, pivotX/Y</td><td>Спрайт-лист (текстура, разбивка на кадры)</td></tr>
+<tr><td>SingleSpriteComponent</td><td>row, column</td><td>Один кадр из спрайт-листа</td></tr>
+<tr><td>AnimatedSpriteComponent</td><td>currentIndex, endIndex, fps, row, elapsed</td><td>Анимация: текущий кадр, FPS, строка</td></tr>
+<tr><td>TextComponent</td><td>text, color, offsetX/Y, font</td><td>Текст с цветом и шрифтом</td></tr>
+<tr><td>CameraComponent</td><td>zoom, viewportWidth/Height, active</td><td>Камера: зум, область, активная</td></tr>
+<tr><td>UiComponent</td><td>parent, renderMode, visible, enabled, hovered, pressed, backgroundColor, pressedTint, clipLeft/Top/Right/Bottom, styleTag</td><td>UI-элемент: родитель, режим, клипы, состояние</td></tr>
+</table></div>
+
+<p>Каждый компонент имеет методы <code>add(entity, ...)</code>, <code>update(entity, ...)</code> и геттеры для каждого поля.</p>
+
+<!-- ======================================================================== -->
+<h2 id="dew-render">4. Рендеринг</h2>
+
+<h3 id="dew-spritebatch"><span class="badge badge-class">class</span> SpriteBatch</h3>
+<pre><code><span class="kw">class</span> <span class="ty">SpriteBatch</span>(<span class="kw">private val</span> <span class="nl">graphicsDevice</span>: <span class="ty">GraphicsDevice</span>)</code></pre>
+<p>Батч для отрисовки 2D-спрайтов с сортировкой. Использует OpenGL ES 3.0 с VAO/VBO.</p>
+
+<p><strong>begin(...)</strong> — начало прохода:</p>
+<pre><code><span class="kw">fun</span> <span class="fn">begin</span>(
+    <span class="nl">sortMode</span>: <span class="ty">SpriteSortMode</span> = <span class="nl">Deferred</span>,
+    <span class="nl">blendState</span>: <span class="ty">BlendState</span>? = <span class="nl">AlphaBlend</span>,
+    <span class="nl">samplerState</span>: <span class="ty">SamplerState</span>? = <span class="nl">LinearClamp</span>,
+    <span class="nl">depthStencilState</span>: <span class="ty">DepthStencilState</span>? = <span class="kw">null</span>,
+    <span class="nl">rasterizerState</span>: <span class="ty">RasterizerState</span>? = <span class="kw">null</span>,
+    <span class="nl">effect</span>: <span class="ty">Effect</span>? = <span class="kw">null</span>,
+    <span class="nl">transformMatrix</span>: <span class="ty">Matrix</span>? = <span class="kw">null</span>
+)</code></pre>
+
+<p><strong>draw(...)</strong> — несколько перегрузок:</p>
+<pre><code><span class="cm">// по позиции с источником, масштабом, поворотом</span>
+<span class="kw">fun</span> <span class="fn">draw</span>(
+    <span class="nl">texture</span>: <span class="ty">Texture2D</span>,
+    <span class="nl">position</span>: <span class="ty">Vector2</span>,
+    <span class="nl">sourceRectangle</span>: <span class="ty">Rectangle</span>? = <span class="kw">null</span>,
+    <span class="nl">color</span>: <span class="ty">Color</span> = <span class="nl">White</span>,
+    <span class="nl">rotation</span>: <span class="ty">Float</span> = 0f,
+    <span class="nl">origin</span>: <span class="ty">Vector2</span> = <span class="nl">Zero</span>,
+    <span class="nl">scale</span>: <span class="ty">Vector2</span> = <span class="nl">One</span>,
+    <span class="nl">effects</span>: <span class="ty">SpriteEffects</span> = <span class="nl">None</span>,
+    <span class="nl">layerDepth</span>: <span class="ty">Float</span> = 0f
+)
+
+<span class="cm">// по прямоугольнику назначения с источником</span>
+<span class="kw">fun</span> <span class="fn">draw</span>(
+    <span class="nl">texture</span>: <span class="ty">Texture2D</span>,
+    <span class="nl">destinationRectangle</span>: <span class="ty">Rectangle</span>,
+    <span class="nl">sourceRectangle</span>: <span class="ty">Rectangle</span>? = <span class="kw">null</span>,
+    ...
+)
+
+<span class="cm">// упрощённые: texture + position, texture + rect</span>
+<span class="kw">fun</span> <span class="fn">draw</span>(<span class="nl">texture</span>: <span class="ty">Texture2D</span>, <span class="nl">position</span>: <span class="ty">Vector2</span>, <span class="nl">color</span>: <span class="ty">Color</span>)
+<span class="kw">fun</span> <span class="fn">draw</span>(<span class="nl">texture</span>: <span class="ty">Texture2D</span>, <span class="nl">rectangle</span>: <span class="ty">Rectangle</span>, <span class="nl">color</span>: <span class="ty">Color</span>)
+
+<span class="cm">// строка через SpriteFont</span>
+<span class="kw">fun</span> <span class="fn">drawString</span>(<span class="nl">spriteFont</span>: <span class="ty">SpriteFont</span>, <span class="nl">text</span>: <span class="ty">String</span>, <span class="nl">position</span>: <span class="ty">Vector2</span>, <span class="nl">color</span>: <span class="ty">Color</span>)
+</code></pre>
+
+<p><strong>end()</strong> — завершает проход и флашит все спрайты.</p>
+
+<h4>SpriteSortMode</h4>
+<pre><code><span class="kw">enum class</span> <span class="ty">SpriteSortMode</span> {
+    <span class="nl">Deferred</span>,      <span class="cm">// сортировка отсутствует</span>
+    <span class="nl">Immediate</span>,     <span class="cm">// сброс кадра немедленно</span>
+    <span class="nl">Texture</span>,       <span class="cm">// сортировка по текстуре</span>
+    <span class="nl">BackToFront</span>,   <span class="cm">// сортировка по глубине (от дальних к ближним)</span>
+    <span class="nl">FrontToBack</span>,   <span class="cm">// сортировка по глубине (от ближних к дальним)</span>
+}</code></pre>
+
+<h4>SpriteEffects</h4>
+<pre><code><span class="kw">enum class</span> <span class="ty">SpriteEffects</span>(<span class="kw">val</span> <span class="nl">value</span>: <span class="ty">Int</span>) {
+    <span class="nl">None</span>(0),
+    <span class="nl">FlipHorizontally</span>(1),
+    <span class="nl">FlipVertically</span>(2),
+}</code></pre>
+
+<h3 id="dew-texture">Texture / Texture2D</h3>
+<pre><code><span class="kw">abstract class</span> <span class="ty">Texture</span> {
+    <span class="kw">var</span> <span class="nl">glTexture</span>: <span class="ty">Int</span>
+    <span class="kw">var</span> <span class="nl">levelCount</span>: <span class="ty">Int</span> = 1
+    <span class="kw">var</span> <span class="nl">format</span>: <span class="ty">SurfaceFormat</span>
+    <span class="kw">abstract fun</span> <span class="fn">bind</span>()
+    <span class="kw">abstract fun</span> <span class="fn">dispose</span>()
+}
+
+<span class="kw">open class</span> <span class="ty">Texture2D</span>(
+    <span class="nl">width</span>: <span class="ty">Int</span>, <span class="nl">height</span>: <span class="ty">Int</span>,
+    <span class="nl">mipMap</span>: <span class="ty">Boolean</span> = <span class="kw">false</span>,
+    <span class="nl">format</span>: <span class="ty">SurfaceFormat</span> = <span class="nl">Color</span>
+) : <span class="ty">Texture</span>() {
+    <span class="kw">fun</span> <span class="fn">setData</span>(<span class="nl">color</span>: <span class="ty">IntArray</span>)                <span class="cm">// загрузить пиксели</span>
+    <span class="kw">fun</span> <span class="fn">setData</span>(<span class="nl">color</span>: <span class="ty">IntArray</span>, <span class="nl">startX</span>: <span class="ty">Int</span>, ...)  <span class="cm">// подгрузить часть</span>
+    <span class="kw">fun</span> <span class="fn">setData</span>(<span class="nl">bitmap</span>: <span class="ty">Bitmap</span>)                 <span class="cm">// из Android Bitmap</span>
+    <span class="kw">fun</span> <span class="fn">getData</span>(): <span class="ty">IntArray</span>                      <span class="cm">// чтение пикселей</span>
+
+    <span class="kw">companion object</span> {
+        <span class="kw">fun</span> <span class="fn">fromBitmap</span>(<span class="nl">bitmap</span>: <span class="ty">Bitmap</span>, ...): <span class="ty">Texture2D</span>
+        <span class="kw">fun</span> <span class="fn">fromAsset</span>(<span class="nl">path</span>: <span class="ty">String</span>, ...): <span class="ty">Texture2D</span>?
+    }
+}</code></pre>
+
+<p><strong>RenderTarget2D</strong> — наследник Texture2D с возможностью рендеринга в текстуру (FBO + RBO).</p>
+
+<h3 id="dew-spritefont"><span class="badge badge-class">class</span> SpriteFont</h3>
+<pre><code><span class="kw">class</span> <span class="ty">SpriteFont</span>(
+    <span class="kw">val</span> <span class="nl">texture</span>: <span class="ty">Texture2D</span>,
+    <span class="kw">val</span> <span class="nl">glyphMap</span>: <span class="ty">Map</span>&lt;<span class="ty">Char</span>, <span class="ty">GlyphInfo</span>&gt;,
+    <span class="kw">val</span> <span class="nl">lineSpacing</span>: <span class="ty">Float</span> = 0f,
+    <span class="kw">val</span> <span class="nl">spacing</span>: <span class="ty">Float</span> = 0f
+) {
+    <span class="kw">fun</span> <span class="fn">measureString</span>(<span class="nl">text</span>: <span class="ty">String</span>): <span class="ty">Vector2</span>
+    <span class="kw">fun</span> <span class="fn">draw</span>(<span class="nl">batch</span>: <span class="ty">SpriteBatch</span>, <span class="nl">text</span>: <span class="ty">String</span>, <span class="nl">position</span>: <span class="ty">Vector2</span>, <span class="nl">color</span>: <span class="ty">Color</span>)
+
+    <span class="kw">companion object</span> {
+        <span class="kw">fun</span> <span class="fn">fromSystemFont</span>(<span class="nl">fontName</span>: <span class="ty">String</span> = <span class="str">"monospace"</span>, <span class="nl">fontSize</span>: <span class="ty">Float</span> = 24f, <span class="nl">characters</span>: <span class="ty">String</span> = ...): <span class="ty">SpriteFont</span>
+    }
+}</code></pre>
+<p><strong>fromSystemFont</strong> — генерирует текстурный атлас шрифта через <code>android.graphics.Paint</code>. Поддерживает кириллицу и ASCII.</p>
+
+<h3 id="dew-effect">Effect / BasicEffect</h3>
+<pre><code><span class="kw">open class</span> <span class="ty">Effect</span> {
+    <span class="kw">var</span> <span class="nl">program</span>: <span class="ty">Int</span>
+    <span class="kw">val</span> <span class="nl">uniforms</span>: <span class="ty">MutableMap</span>&lt;<span class="ty">String</span>, <span class="ty">Int</span>&gt;
+    <span class="kw">fun</span> <span class="fn">linkProgram</span>(<span class="nl">vertexSource</span>: <span class="ty">String</span>, <span class="nl">fragmentSource</span>: <span class="ty">String</span>)
+    <span class="kw">open fun</span> <span class="fn">apply</span>()                              <span class="cm">// glUseProgram</span>
+    <span class="kw">fun</span> <span class="fn">setUniform</span>(<span class="nl">name</span>: <span class="ty">String</span>, <span class="nl">value</span>: <span class="ty">Float</span> | <span class="ty">Int</span> | <span class="ty">Boolean</span>)
+    <span class="kw">fun</span> <span class="fn">setUniformMatrix</span>(<span class="nl">name</span>: <span class="ty">String</span>, <span class="nl">matrix</span>: <span class="ty">Matrix</span>)
+    <span class="kw">fun</span> <span class="fn">dispose</span>()
+}
+
+<span class="kw">class</span> <span class="ty">BasicEffect</span> : <span class="ty">Effect</span>() {
+    <span class="kw">var</span> <span class="nl">world</span>: <span class="ty">Matrix</span>
+    <span class="kw">var</span> <span class="nl">view</span>: <span class="ty">Matrix</span>
+    <span class="kw">var</span> <span class="nl">projection</span>: <span class="ty">Matrix</span>
+    <span class="kw">var</span> <span class="nl">diffuseColor</span>: <span class="ty">Vector3</span>
+    <span class="kw">var</span> <span class="nl">alpha</span>: <span class="ty">Float</span>
+    <span class="kw">var</span> <span class="nl">vertexColorEnabled</span>: <span class="ty">Boolean</span>
+    <span class="kw">var</span> <span class="nl">textureEnabled</span>: <span class="ty">Boolean</span>
+    <span class="kw">var</span> <span class="nl">texture</span>: <span class="ty">Texture2D</span>?
+}</code></pre>
+
+<h3 id="dew-states">Состояния рендеринга</h3>
+
+<h4>BlendState</h4>
+<pre><code><span class="kw">class</span> <span class="ty">BlendState</span> { ... }
+<span class="cm">// Статические экземпляры: Opaque, AlphaBlend, Additive, NonPremultiplied, Multiply, Subtract</span>
+<span class="cm">// Внутренние enum'ы: Blend, BlendFunction, ColorWriteChannels</span></code></pre>
+
+<h4>DepthStencilState</h4>
+<pre><code><span class="kw">data class</span> <span class="ty">DepthStencilState</span> { ... }
+<span class="cm">// Статические: Default, DepthRead, None</span></code></pre>
+
+<h4>RasterizerState</h4>
+<pre><code><span class="kw">data class</span> <span class="ty">RasterizerState</span> { ... }
+<span class="cm">// Статические: CullNone, CullClockwise, CullCounterClockwise</span></code></pre>
+
+<h4>SamplerState</h4>
+<pre><code><span class="kw">class</span> <span class="ty">SamplerState</span> { ... }
+<span class="cm">// Статические: LinearClamp, PointClamp, LinearWrap, PointWrap, AnisotropicClamp</span></code></pre>
+
+<h4>Остальные классы графики</h4>
+<p><strong>VertexBuffer</strong> — буфер вершин на GPU. <strong>IndexBuffer</strong> — индексный буфер. <strong>VertexDeclaration</strong> — описание формата вершин. <strong>VertexPositionColorTexture</strong> — формат вершины "позиция + цвет + UV". <strong>PrimitiveType</strong> — TriangleList, TriangleStrip, LineList, LineStrip, PointList. <strong>ClearOptions</strong> — Target, DepthBuffer, Stencil. <strong>PresentationParameters</strong> — параметры экрана (разрешение, глубина, MSAA). <strong>Viewport</strong> — область вывода с проекцией/анпроекцией. <strong>DisplayMode</strong> — разрешение + частота.</p>
+
+<!-- ======================================================================== -->
+<h2 id="dew-scene">5. Сцены и UI</h2>
+
+<h3 id="dew-scene-class"><span class="badge badge-class">class</span> Scene</h3>
+<pre><code><span class="kw">open class</span> <span class="ty">Scene</span>(<span class="kw">protected val</span> <span class="nl">sceneManager</span>: <span class="ty">SceneManager</span>) {
+    <span class="kw">val</span> <span class="nl">scope</span>: <span class="ty">CargoContainer</span>
+    <span class="kw">val</span> <span class="nl">entityManager</span>: <span class="ty">EntityManager</span>
+    <span class="kw">val</span> <span class="nl">componentManager</span>: <span class="ty">ComponentManager</span>
+    <span class="kw">val</span> <span class="nl">systemManager</span>: <span class="ty">SystemManager</span>
+    <span class="kw">val</span> <span class="nl">uiManager</span>: <span class="ty">UiManager</span>
+    <span class="kw">val</span> <span class="nl">world</span>: <span class="ty">World</span>
+
+    <span class="kw">fun</span> <span class="fn">initialize</span>()
+    <span class="kw">protected open fun</span> <span class="fn">onInitialize</span>()  <span class="cm">// переопределяется</span>
+    <span class="kw">open fun</span> <span class="fn">onEnter</span>(<span class="nl">previousScene</span>: <span class="ty">Scene</span>?)
+    <span class="kw">open fun</span> <span class="fn">onExit</span>()
+    <span class="kw">open fun</span> <span class="fn">update</span>(<span class="nl">gameTime</span>: <span class="ty">GameTime</span>)
+    <span class="kw">open fun</span> <span class="fn">draw</span>(<span class="nl">gameTime</span>: <span class="ty">GameTime</span>)
+    <span class="kw">open fun</span> <span class="fn">reloadGraphicsResources</span>()
+}</code></pre>
+
+<h3 id="dew-scenemanager"><span class="badge badge-class">class</span> SceneManager</h3>
+<pre><code><span class="kw">class</span> <span class="ty">SceneManager</span>(<span class="kw">private val</span> <span class="nl">game</span>: <span class="ty">Game</span>) {
+    <span class="kw">val</span> <span class="nl">scope</span>: <span class="ty">CargoContainer</span>    <span class="cm">// дочерний скоуп от game.cargo</span>
+    <span class="kw">fun</span> <span class="fn">add</span>(<span class="nl">name</span>: <span class="ty">String</span>, <span class="nl">scene</span>: <span class="ty">Scene</span>): <span class="ty">Scene</span>
+    <span class="kw">fun</span> <span class="fn">switchTo</span>(<span class="nl">name</span>: <span class="ty">String</span>)
+    <span class="kw">fun</span> <span class="fn">initialize</span>()
+    <span class="kw">fun</span> <span class="fn">update</span>(<span class="nl">gameTime</span>: <span class="ty">GameTime</span>)
+    <span class="kw">fun</span> <span class="fn">draw</span>(<span class="nl">gameTime</span>: <span class="ty">GameTime</span>)
+    <span class="kw">fun</span> <span class="fn">reloadGraphicsResources</span>()
+}</code></pre>
+<p>При инициализации SceneManager автоматически создаёт и регистрирует все стандартные компоненты и системы: CameraComponent, TransformComponent, SpriteComponent, SingleSpriteComponent, AnimatedSpriteComponent, TextComponent, UiComponent, UiLayoutSystem, UiInteractionSystem, RenderSystem.</p>
+
+<h3 id="dew-uielement"><span class="badge badge-class">class</span> UiElement</h3>
+<pre><code><span class="kw">open class</span> <span class="ty">UiElement</span>(
+    <span class="kw">internal val</span> <span class="nl">world</span>: <span class="ty">World</span>,
+    <span class="kw">val</span> <span class="nl">entity</span>: <span class="ty">Entity</span>
+) {
+    <span class="kw">val</span> <span class="nl">children</span>: <span class="ty">List</span>&lt;<span class="ty">UiElement</span>&gt;
+    <span class="kw">var</span> <span class="nl">parent</span>: <span class="ty">UiElement</span>?
+    <span class="kw">val</span> <span class="nl">canInteract</span>: <span class="ty">Boolean</span>  <span class="cm">// переопределяется в интерактивных</span>
+
+    <span class="cm">// свойства-прокси из TransformComponent и UiComponent</span>
+    <span class="kw">var</span> <span class="nl">x</span>: <span class="ty">Float</span>; <span class="kw">var</span> <span class="nl">y</span>: <span class="ty">Float</span>
+    <span class="kw">var</span> <span class="nl">width</span>: <span class="ty">Float</span>; <span class="kw">var</span> <span class="nl">height</span>: <span class="ty">Float</span>
+    <span class="kw">var</span> <span class="nl">visible</span>: <span class="ty">Boolean</span>; <span class="kw">var</span> <span class="nl">enabled</span>: <span class="ty">Boolean</span>
+    <span class="kw">var</span> <span class="nl">backgroundColor</span>: <span class="ty">Color</span>
+    <span class="kw">var</span> <span class="nl">styleTag</span>: <span class="ty">String</span>?
+    <span class="kw">var</span> <span class="nl">clipLeft</span>/<span class="nl">Top</span>/<span class="nl">Right</span>/<span class="nl">Bottom</span>: <span class="ty">Float</span>
+    <span class="kw">val</span> <span class="nl">bounds</span>: <span class="ty">Rectangle</span>
+
+    <span class="kw">fun</span> <span class="fn">add</span>(<span class="nl">child</span>: <span class="ty">UiElement</span>): <span class="ty">UiElement</span>
+    <span class="kw">fun</span> <span class="fn">remove</span>(<span class="nl">child</span>: <span class="ty">UiElement</span>)
+    <span class="kw">fun</span> <span class="fn">setBounds</span>(<span class="nl">x</span>: <span class="ty">Float</span>, <span class="nl">y</span>: <span class="ty">Float</span>, <span class="nl">width</span>: <span class="ty">Float</span>, <span class="nl">height</span>: <span class="ty">Float</span>)
+    <span class="kw">fun</span> <span class="fn">setClipRect</span>(<span class="nl">left</span>: <span class="ty">Float</span>, <span class="nl">top</span>: <span class="ty">Float</span>, <span class="nl">right</span>: <span class="ty">Float</span>, <span class="nl">bottom</span>: <span class="ty">Float</span>)
+    <span class="kw">fun</span> <span class="fn">resetClipRect</span>()
+    <span class="kw">fun</span> <span class="fn">setSprite</span>(<span class="nl">filename</span>: <span class="ty">String</span>, ...): <span class="ty">UiElement</span>
+
+    <span class="kw">open fun</span> <span class="fn">onPointerReleasedInside</span>()
+    <span class="kw">open fun</span> <span class="fn">onPointerDrag</span>(<span class="nl">localPosition</span>: <span class="ty">Vector2</span>)
+}</code></pre>
+
+<h3 id="dew-uicontrols">UI-контролы</h3>
+<div class="table-wrap"><table>
+<tr><th>Класс</th><th>Наследует</th><th>canInteract</th><th>Особенности</th></tr>
+<tr><td>Label</td><td>UiElement</td><td>false</td><td>Текст + цвет</td></tr>
+<tr><td>Button</td><td>UiElement</td><td>true</td><td>Текст + onClick</td></tr>
+<tr><td>StackView</td><td>UiElement</td><td>false</td><td>Ориентация (Vertical/Horizontal) + spacing</td></tr>
+<tr><td>ListView</td><td>StackView</td><td>false</td><td>Вертикальный StackView</td></tr>
+<tr><td>ScrollView</td><td>UiElement</td><td>true</td><td>Прокрутка: scrollOffset, scrollOffsetX, contentWidth/Height. Обработка drag.</td></tr>
+<tr><td>GridView</td><td>UiElement</td><td>false</td><td>Сетка: columns, rowSpacing, columnSpacing</td></tr>
+<tr><td>CheckBox</td><td>UiElement</td><td>true</td><td>checked + onChanged</td></tr>
+<tr><td>RadioButton</td><td>UiElement</td><td>true</td><td>group + selected + onSelected. Автоматическая де-селекция в группе.</td></tr>
+<tr><td>DropMenu</td><td>UiElement</td><td>true</td><td>items + selectedIndex + expanded. При нажатии создаёт/удаляет дочерние DropMenuItem.</td></tr>
+<tr><td>Slider</td><td>UiElement</td><td>true</td><td>min, max, value, onChanged. Обработка drag для изменения значения.</td></tr>
+<tr><td>DropMenuItem</td><td>UiElement</td><td>true</td><td>Внутренний элемент DropMenu. При нажатии вызывает selectItem.</td></tr>
+</table></div>
+
+<h3 id="dew-uimanager"><span class="badge badge-class">class</span> UiManager</h3>
+<pre><code><span class="kw">class</span> <span class="ty">UiManager</span>(<span class="kw">private val</span> <span class="nl">world</span>: <span class="ty">World</span>) {
+    <span class="kw">val</span> <span class="nl">elements</span>: <span class="ty">Collection</span>&lt;<span class="ty">UiElement</span>&gt;
+    <span class="kw">val</span> <span class="nl">roots</span>: <span class="ty">List</span>&lt;<span class="ty">UiElement</span>&gt;  <span class="cm">// элементы без родителя</span>
+
+    <span class="kw">fun</span> <span class="fn">register</span>(<span class="nl">element</span>: <span class="ty">UiElement</span>)
+    <span class="kw">fun</span> <span class="fn">remove</span>(<span class="nl">element</span>: <span class="ty">UiElement</span>)
+    <span class="kw">fun</span> <span class="fn">clear</span>()
+    <span class="kw">fun</span> <span class="fn">element</span>(<span class="nl">entity</span>: <span class="ty">Int</span>): <span class="ty">UiElement</span>?
+
+    <span class="cm">// Фабричные методы (каждый создаёт entity + компоненты + UiElement):</span>
+    <span class="kw">fun</span> <span class="fn">label</span>(...): <span class="ty">Label</span>
+    <span class="kw">fun</span> <span class="fn">button</span>(...): <span class="ty">Button</span>
+    <span class="kw">fun</span> <span class="fn">stackView</span>(...): <span class="ty">StackView</span>
+    <span class="kw">fun</span> <span class="fn">listView</span>(...): <span class="ty">ListView</span>
+    <span class="kw">fun</span> <span class="fn">scrollView</span>(...): <span class="ty">ScrollView</span>
+    <span class="kw">fun</span> <span class="fn">gridView</span>(...): <span class="ty">GridView</span>
+    <span class="kw">fun</span> <span class="fn">checkBox</span>(...): <span class="ty">CheckBox</span>
+    <span class="kw">fun</span> <span class="fn">radioButton</span>(...): <span class="ty">RadioButton</span>
+    <span class="kw">fun</span> <span class="fn">dropMenu</span>(...): <span class="ty">DropMenu</span>
+    <span class="kw">fun</span> <span class="fn">slider</span>(...): <span class="ty">Slider</span>
+}</code></pre>
+
+<h4>UiRenderMode</h4>
+<pre><code><span class="kw">enum class</span> <span class="ty">UiRenderMode</span> {
+    <span class="nl">Static</span>,   <span class="cm">// экранные координаты (по умолчанию)</span>
+    <span class="nl">World</span>     <span class="cm">// мировые координаты (с учётом камеры)</span>
+}</code></pre>
+
+<h3 id="dew-uitheme"><span class="badge badge-obj">object</span> UiTheme</h3>
+<pre><code><span class="kw">object</span> <span class="ty">UiTheme</span> {
+    <span class="kw">fun</span> <span class="fn">texture</span>(<span class="nl">id</span>: <span class="ty">String</span>): <span class="ty">Texture2D</span>
+    <span class="kw">fun</span> <span class="fn">dispose</span>()
+}</code></pre>
+<p>Генерирует текстуры программно (через Canvas Android) для: <code>checkbox_unchecked</code>, <code>checkbox_checked</code>, <code>radio_unselected</code>, <code>radio_selected</code>, <code>slider_track</code>, <code>slider_thumb</code>, <code>dropdown_arrow</code>.</p>
+
+<h3 id="dew-systems">Системы UI</h3>
+
+<h4><span class="badge badge-class">class</span> UiLayoutSystem (updateOrder = -20)</h4>
+<p>Обновляет расстановку UI-элементов каждый кадр: обрабатывает <code>StackView</code>, <code>GridView</code>, <code>ScrollView</code>, а для обычных элементов — <code>layoutChildren</code>.</p>
+
+<h4><span class="badge badge-class">class</span> UiInteractionSystem (updateOrder = -10)</h4>
+<p>Обрабатывает ввод мыши/тача: hit-test, hover, press, drag (для ScrollView и Slider), click (для Button, CheckBox, RadioButton, DropMenu).</p>
+
+<h4><span class="badge badge-class">class</span> RenderSystem</h4>
+<p>Главная система рендеринга. В <code>update()</code> обновляет матрицу камеры и анимации. В <code>draw()</code> очищает экран, рисует мировые спрайты (с учётом камеры) и статический UI через рекурсивный <code>drawUiTree()</code> с поддержкой ScrollView-клиппинга (Scissor Test).</p>
+
+<!-- ======================================================================== -->
+<h2 id="dew-input">6. Ввод</h2>
+
+<h3 id="dew-keyboard"><span class="badge badge-obj">object</span> Keyboard</h3>
+<pre><code><span class="kw">object</span> <span class="ty">Keyboard</span> {
+    <span class="kw">fun</span> <span class="fn">getState</span>(): <span class="ty">KeyboardState</span>
+    <span class="kw">fun</span> <span class="fn">isKeyPressed</span>(<span class="nl">key</span>: <span class="ty">Keys</span>): <span class="ty">Boolean</span>   <span class="cm">// только что нажата</span>
+    <span class="kw">fun</span> <span class="fn">isKeyReleased</span>(<span class="nl">key</span>: <span class="ty">Keys</span>): <span class="ty">Boolean</span>
+}</code></pre>
+<p><strong>KeyboardState</strong> — содержит множество нажатых клавиш (<code>Keys</code>). Методы: <code>isKeyDown</code>, <code>isKeyUp</code>, <code>getPressedKeys</code>.</p>
+<p><strong>Keys</strong> — enum со 100+ клавишами, использующий Android keyCode.</p>
+
+<h3 id="dew-mouse"><span class="badge badge-obj">object</span> Mouse</h3>
+<pre><code><span class="kw">object</span> <span class="ty">Mouse</span> {
+    <span class="kw">fun</span> <span class="fn">getState</span>(): <span class="ty">MouseState</span>
+    <span class="kw">fun</span> <span class="fn">setPosition</span>(<span class="nl">x</span>: <span class="ty">Int</span>, <span class="nl">y</span>: <span class="ty">Int</span>)
+}</code></pre>
+<p><strong>MouseState</strong> — data class: x, y, leftButton, middleButton, rightButton, scrollWheelValue, position (Point). ButtonState: Pressed / Released.</p>
+
+<h3 id="dew-touch"><span class="badge badge-obj">object</span> Touch</h3>
+<pre><code><span class="kw">object</span> <span class="ty">Touch</span> {
+    <span class="kw">fun</span> <span class="fn">getState</span>(): <span class="ty">TouchCollection</span>
+    <span class="kw">fun</span> <span class="fn">isAnyTouch</span>(): <span class="ty">Boolean</span>
+}</code></pre>
+<p><strong>TouchCollection</strong> — список TouchLocation с id, position, previousPosition, state (Pressed, Moved, Released), pressure.</p>
+
+<h3 id="dew-gamepad"><span class="badge badge-obj">object</span> GamePad</h3>
+<pre><code><span class="kw">object</span> <span class="ty">GamePad</span> {
+    <span class="kw">fun</span> <span class="fn">getState</span>(<span class="nl">playerIndex</span>: <span class="ty">Int</span> = 0): <span class="ty">GamePadState</span>
+    <span class="kw">fun</span> <span class="fn">setVibration</span>(<span class="nl">playerIndex</span>: <span class="ty">Int</span>, <span class="nl">leftMotor</span>: <span class="ty">Float</span>, <span class="nl">rightMotor</span>: <span class="ty">Float</span>): <span class="ty">Boolean</span>
+}</code></pre>
+<p><strong>GamePadState</strong> — содержит buttons (a, b, x, y, start, back, leftShoulder, rightShoulder, leftStick, rightStick), dPad (up, down, left, right), thumbSticks (left, right Vector2), triggers (left, right Float), isConnected, packetNumber.</p>
+
+<!-- ======================================================================== -->
+<h2 id="dew-math">7. Математика</h2>
+
+<h3 id="dew-math-vec">Vector2 / Vector3 / Vector4</h3>
+<p>Data-классы с компонентами x, y (z, w). Поддерживают:</p>
+<ul>
+<li>Арифметические операторы (+, -, *, /, unary -)</li>
+<li>length(), lengthSquared(), normalize()</li>
+<li>Статические методы: add, subtract, multiply, divide, negate, dot, cross, distance, lerp, normalize, reflect, min, max, clamp, transform</li>
+<li>toArray()</li>
+<li>Vector2 дополнительно: angle(), transformNormal()</li>
+<li>Vector3: дополнительные константы Up, Down, Right, Left, Forward, Backward</li>
+</ul>
+
+<h3 id="dew-math-matrix">Matrix</h3>
+<p>Матрица 4×4 (m11...m44). Реализованы:</p>
+<ul>
+<li>Статические методы: Identity, createTranslation, createScale, createRotationX/Y/Z, createOrthographic, createOrthographicOffCenter, createPerspectiveFieldOfView, createLookAt, createFromQuaternion, createWorld, transpose, multiply, invert</li>
+<li>instance-методы: determinant(), toArray(), translation(), scale(), forward/backward/up/down/right/left(), decomposeScale()</li>
+<li>Операторы: * (Matrix × Matrix), * (Matrix × Vector3)</li>
+</ul>
+
+<h3 id="dew-math-other">Color / Rectangle / Quaternion / Point</h3>
+
+<h4>Color</h4>
+<p>Формат: packedValue (UInt, RRGGBBAA). Конструкторы: (r, g, b, a: Int), (r, g, b, a: Float), (Vector3), (Vector4). Свойства r, g, b, a (Int 0-255), rf, gf, bf, af (Float 0-1). 80+ именованных констант. Операторы: *, +.</p>
+
+<h4>Rectangle</h4>
+<p>Свойства: x, y, width, height, left, right, top, bottom, center, location, isZero, isEmpty. Методы: contains, inflate, intersects, intersect, union, offset, toFloatArray.</p>
+
+<h4>Quaternion</h4>
+<p>Компоненты x, y, z, w. Константа Identity. Статические методы: createFromAxisAngle, createFromYawPitchRoll, createFromRotationMatrix, conjugate, inverse, dot, lerp, slerp, normalize. Instance: toMatrix().</p>
+
+<h4>Point</h4>
+<p>x, y (Int). Константы Zero, One. Операторы: +, -, *, /, unary -. Метод: toVector2().</p>
+
+<h3 id="dew-mathhelper">MathHelper</h3>
+<p>Константы: E, Log10E, Log2E, Pi, PiOver2, PiOver4, TwoPi. Методы: clamp, distance, lerp, smoothStep, hermite, catmullRom, toRadians, toDegrees, wrapAngle, max, min, sqrt.</p>
+
+<!-- ======================================================================== -->
+<h2 id="dew-audio">8. Аудио</h2>
+
+<h3 id="dew-audio-classes">SoundEffect / SoundEffectInstance</h3>
+<pre><code><span class="kw">class</span> <span class="ty">SoundEffect</span>(
+    <span class="kw">val</span> <span class="nl">buffer</span>: <span class="ty">ByteArray</span>,
+    <span class="kw">val</span> <span class="nl">sampleRate</span>: <span class="ty">Int</span> = 44100,
+    <span class="kw">val</span> <span class="nl">channels</span>: <span class="ty">Int</span> = 2,
+    <span class="kw">val</span> <span class="nl">bitsPerSample</span>: <span class="ty">Int</span> = 16,
+    <span class="kw">val</span> <span class="nl">duration</span>: <span class="ty">Long</span> = 0L
+) {
+    <span class="kw">fun</span> <span class="fn">createInstance</span>(): <span class="ty">SoundEffectInstance</span>
+    <span class="kw">fun</span> <span class="fn">play</span>(<span class="nl">volume</span>: <span class="ty">Float</span> = 1f, <span class="nl">pitch</span>: <span class="ty">Float</span> = 0f, <span class="nl">pan</span>: <span class="ty">Float</span> = 0f)
+    <span class="kw">fun</span> <span class="fn">dispose</span>()
+
+    <span class="kw">companion object</span> {
+        <span class="kw">fun</span> <span class="fn">fromWav</span>(<span class="nl">inputStream</span>: <span class="ty">InputStream</span>): <span class="ty">SoundEffect</span>
+        <span class="kw">fun</span> <span class="fn">fromOgg</span>(<span class="nl">inputStream</span>: <span class="ty">InputStream</span>): <span class="ty">SoundEffect</span>
+    }
+}
+
+<span class="kw">class</span> <span class="ty">SoundEffectInstance</span>(<span class="kw">private val</span> <span class="nl">soundEffect</span>: <span class="ty">SoundEffect</span>) {
+    <span class="kw">var</span> <span class="nl">volume</span>: <span class="ty">Float</span>; <span class="kw">var</span> <span class="nl">pitch</span>: <span class="ty">Float</span>; <span class="kw">var</span> <span class="nl">pan</span>: <span class="ty">Float</span>
+    <span class="kw">var</span> <span class="nl">isLooped</span>: <span class="ty">Boolean</span>
+    <span class="kw">fun</span> <span class="fn">play</span>(); <span class="kw">fun</span> <span class="fn">pause</span>(); <span class="kw">fun</span> <span class="fn">resume</span>(); <span class="kw">fun</span> <span class="fn">stop</span>(); <span class="kw">fun</span> <span class="fn">dispose</span>()
+}</code></pre>
+<p>Использует <code>android.media.AudioTrack</code>. Поддерживает WAV (PCM) и OGG Vorbis (через MediaCodec).</p>
+
+<h3 id="dew-audio-other">AudioEmitter / AudioListener / AudioEngine</h3>
+<p><strong>AudioEmitter</strong> — data class: position, forward, up, velocity, dopplerScale. <strong>AudioListener</strong> — data class: position, forward, up, velocity. <strong>AudioEngine</strong> — заглушка с isDisposed.</p>
+
+<!-- ======================================================================== -->
+<h2 id="dew-content">9. ContentManager</h2>
+<pre><code><span class="kw">class</span> <span class="ty">ContentManager</span>(<span class="kw">private val</span> <span class="nl">game</span>: <span class="ty">Game</span>) {
+    <span class="kw">var</span> <span class="nl">rootDirectory</span>: <span class="ty">String</span>  <span class="cm">// "Content"</span>
+
+    <span class="kw">fun</span> <span class="fn">setAssetManager</span>(<span class="nl">am</span>: <span class="ty">AssetManager</span>)
+    <span class="kw">fun</span> <span class="fn">setRootDirectory</span>(<span class="nl">path</span>: <span class="ty">String</span>)
+
+    <span class="kw">fun</span> &lt;<span class="ty">T</span>&gt; <span class="fn">load</span>(<span class="nl">path</span>: <span class="ty">String</span>): <span class="ty">T</span>  <span class="cm">// загружает и кеширует</span>
+    <span class="kw">fun</span> &lt;<span class="ty">T</span>&gt; <span class="fn">getLoaded</span>(<span class="nl">key</span>: <span class="ty">String</span>): <span class="ty">T</span>?
+
+    <span class="kw">fun</span> <span class="fn">unload</span>()   <span class="cm">// освобождает все загруженные ресурсы</span>
+    <span class="kw">fun</span> <span class="fn">dispose</span>() = <span class="fn">unload</span>()
+}</code></pre>
+<p>Автоматически определяет тип по расширению: .png/.jpg/.bmp → Texture2D, .wav → SoundEffect (PCM), .ogg → SoundEffect (Vorbis), .txt/.json/.xml/.glsl → String.</p>
+
+<!-- ======================================================================== -->
+<h2 id="appendix">Приложение: BacksideGame и MainActivity</h2>
+
+<h4>MainActivity</h4>
+<pre><code><span class="kw">class</span> <span class="ty">MainActivity</span> : <span class="ty">DewActivity</span>() {
+    <span class="kw">override fun</span> <span class="fn">createGame</span>(): <span class="ty">Game</span> = <span class="ty">BacksideGame</span>()
+}</code></pre>
+
+<h4>BacksideGame</h4>
+<pre><code><span class="kw">open class</span> <span class="ty">BacksideGame</span> : <span class="ty">Game</span>() {
+    <span class="kw">override fun</span> <span class="fn">loadContent</span>() {
+        <span class="nl">sceneManager</span> = <span class="ty">SceneManager</span>(<span class="k">this</span>)
+        <span class="nl">sceneManager</span>.<span class="fn">add</span>(<span class="str">"test"</span>, <span class="ty">TestScene</span>(<span class="nl">sceneManager</span>))
+        <span class="nl">sceneManager</span>.<span class="fn">initialize</span>()
+        <span class="nl">sceneManager</span>.<span class="fn">switchTo</span>(<span class="str">"test"</span>)
+    }
+
+    <span class="kw">override fun</span> <span class="fn">update</span>(<span class="nl">gameTime</span>: <span class="ty">GameTime</span>) {
+        <span class="k">if</span> (<span class="ty">Keyboard</span>.<span class="fn">getState</span>().<span class="fn">isKeyDown</span>(<span class="ty">Keys</span>.<span class="nl">Escape</span>)) <span class="fn">exit</span>()
+        <span class="nl">sceneManager</span>.<span class="fn">update</span>(<span class="nl">gameTime</span>)
+        <span class="k">super</span>.<span class="fn">update</span>(<span class="nl">gameTime</span>)
+    }
+}</code></pre>
+
+<h4>TestScene (пример использования UI)</h4>
+<pre><code><span class="kw">class</span> <span class="ty">TestScene</span>(<span class="nl">sceneManager</span>: <span class="ty">SceneManager</span>) : <span class="ty">Scene</span>(<span class="nl">sceneManager</span>) {
+    <span class="kw">override fun</span> <span class="fn">onInitialize</span>() {
+        <span class="kw">val</span> root = <span class="nl">uiManager</span>.<span class="fn">stackView</span>(<span class="nl">x</span> = 0f, <span class="nl">y</span> = 0f, <span class="nl">width</span> = 1920f, <span class="nl">height</span> = 1080f,
+            <span class="nl">orientation</span> = <span class="ty">Orientation</span>.<span class="nl">Horizontal</span>, <span class="nl">backgroundColor</span> = <span class="ty">Color</span>(18, 20, 26))
+
+        <span class="cm">// ScrollView с вертикальной прокруткой</span>
+        <span class="kw">val</span> scroll = <span class="nl">uiManager</span>.<span class="fn">scrollView</span>(<span class="nl">x</span> = 16f, <span class="nl">width</span> = 840f, <span class="nl">height</span> = 860f,
+            <span class="nl">backgroundColor</span> = <span class="ty">Color</span>(16, 20, 28), <span class="nl">parent</span> = leftPanel)
+        <span class="fn">repeat</span>(24) { i ->
+            <span class="nl">uiManager</span>.<span class="fn">label</span>(<span class="nl">text</span> = <span class="str">"Item $i"</span>, <span class="nl">x</span> = 16f, <span class="nl">y</span> = i * 64f,
+                <span class="nl">width</span> = 800f, <span class="nl">height</span> = 56f, <span class="nl">parent</span> = scroll)
+        }
+    }
+}</code></pre>
+
+<!-- ======================================================================== -->
+<h2>ArrayUtils (утилита)</h2>
+<pre><code><span class="kw">class</span> <span class="ty">ArrayUtils</span> {
+    <span class="kw">companion object</span> {
+        <span class="kw">const val</span> <span class="nl">MAX_ARRAY_SIZE</span> = <span class="ty">Int</span>.<span class="nl">MAX_VALUE</span> - 8
+        <span class="kw">fun</span> <span class="fn">growCapacity</span>(<span class="nl">old</span>: <span class="ty">Int</span>, <span class="nl">minRequired</span>: <span class="ty">Int</span>): <span class="ty">Int</span>
+        <span class="kw">fun</span> <span class="fn">ensureCapacity</span>(<span class="nl">array</span>: <span class="ty">IntArray</span> | <span class="ty">FloatArray</span> | ..., <span class="nl">target</span>: <span class="ty">Int</span>, <span class="nl">grow</span>: ((<span class="ty">Int</span>) -> <span class="ty">Unit</span>)? = <span class="kw">null</span>): <span class="ty">IntArray</span>
+    }
+}
+
+<span class="cm">// Extension-функции swap для всех примитивных массивов и Array&lt;T&gt;</span></code></pre>
+<p>Стратегия роста: x1.5 от текущего размера. Используется компонентами ECS и менеджерами.</p>
+
+<p style="margin-top:48px;color:var(--muted);font-size:14px;border-top:1px solid var(--border);padding-top:16px;">
+Backside Engine Guide &mdash; Полный обзор пакетов ru.kayron.cargo и ru.kayron.dew.<br>
+Сгенерировано на основе исходного кода проекта.
+</p>
+</main>
+<script>
+function toggleToc() {
+  document.querySelector('nav.toc').classList.toggle('open');
+  document.getElementById('menu-overlay').classList.toggle('show');
+}
+</script>
+</body>
+</html>

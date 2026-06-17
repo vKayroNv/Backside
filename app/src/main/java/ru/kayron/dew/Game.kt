@@ -3,18 +3,21 @@ package ru.kayron.dew
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import ru.kayron.dew.components.*
 import ru.kayron.dew.graphics.GraphicsDevice
 import ru.kayron.dew.input.*
 import ru.kayron.dew.content.ContentManager
+import ru.kayron.dew.systems.RenderSystem
+import ru.kayron.dew.systems.UiInteractionSystem
+import ru.kayron.dew.systems.UiLayoutSystem
 import ru.kayron.cargo.Cargo
 import ru.kayron.cargo.CargoContainer
+import ru.kayron.cargo.module
 
 open class Game : View.OnKeyListener, View.OnTouchListener {
     val graphicsDevice = GraphicsDevice()
     val gameWindow: GameWindow = GameWindow()
     val cargo: CargoContainer = Cargo.root
-    
-    val graphicsDeviceManager: GraphicsDeviceManager = GraphicsDeviceManager(this)
 
     var isActive: Boolean = true
     var isMouseVisible: Boolean = true
@@ -27,7 +30,51 @@ open class Game : View.OnKeyListener, View.OnTouchListener {
     private var lastFrameTimeNanos: Long = 0L
     private var totalGameTimeNanos: Long = 0L
 
-    val content: ContentManager = ContentManager(this)
+    val graphicsDeviceManager: GraphicsDeviceManager
+    val content: ContentManager
+
+    init {
+        graphicsDeviceManager = GraphicsDeviceManager(this)
+        content = ContentManager(this)
+
+        cargo.load(module {
+            singleton { this@Game.graphicsDevice }
+            singleton { this@Game.gameWindow }
+            singleton { this@Game.graphicsDeviceManager }
+            singleton { this@Game.content }
+            singleton { this@Game }
+
+            scoped { CameraComponent() }
+            scoped { TransformComponent() }
+            scoped { SpriteComponent() }
+            scoped { SingleSpriteComponent() }
+            scoped { AnimatedSpriteComponent() }
+            scoped { TextComponent() }
+            scoped { UiComponent() }
+            scoped { VelocityComponent() }
+
+            scoped {
+                RenderSystem(
+                    get(),
+                    get(),
+                    get()
+                )
+            }
+            scoped {
+                UiLayoutSystem(
+                    get(),
+                    get()
+                )
+            }
+            scoped {
+                UiInteractionSystem(
+                    get(),
+                    get(),
+                    get()
+                )
+            }
+        })
+    }
 
     open fun initialize() {
         if (isInitialized) return

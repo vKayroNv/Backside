@@ -1,5 +1,6 @@
 package ru.kayron.dew
 
+import ru.kayron.cargo.module
 import ru.kayron.dew.graphics.*
 import ru.kayron.dew.graphics.PresentationParameters.DepthFormat
 import ru.kayron.dew.graphics.PresentationParameters.DisplayOrientation
@@ -35,7 +36,9 @@ class GraphicsDeviceManager(private val game: Game) : IGraphicsDeviceManager, IG
 
         graphicsDevice.setViewport(0, 0, preferredBackBufferWidth, preferredBackBufferHeight)
 
-        game.cargo.addSingleton<IGraphicsDeviceService>(this)
+        game.cargo.load(module {
+            singleton<IGraphicsDeviceService> { this@GraphicsDeviceManager }
+        })
 
         initialized = true
     }
